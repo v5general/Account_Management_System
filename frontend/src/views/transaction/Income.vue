@@ -1,0 +1,203 @@
+<template>
+  <div class="income-form">
+    <el-card>
+      <template #header>
+        <span>收入登记</span>
+      </template>
+
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
+        <el-form-item label="来源项目" prop="project_name">
+          <el-input v-model="form.project_name" placeholder="请输入来源项目" />
+        </el-form-item>
+
+        <el-form-item label="费用分类" prop="category_id">
+          <el-select v-model="form.category_id" placeholder="请选择费用分类" clearable>
+            <el-option
+              v-for="cat in categories"
+              :key="cat.category_id"
+              :label="cat.name"
+              :value="cat.category_id"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="金额" prop="amount">
+          <el-input-number v-model="form.amount" :min="0.01" :precision="2" :step="100" />
+          <span class="unit">元</span>
+        </el-form-item>
+
+        <el-form-item label="交易时间" prop="transaction_time">
+          <el-date-picker
+            v-model="form.transaction_time"
+            type="datetime"
+            placeholder="选择日期时间"
+            format="YYYY-MM-DD HH:mm:ss"
+          />
+        </el-form-item>
+
+        <el-form-item label="备注">
+          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+        </el-form-item>
+
+        <el-form-item label="凭证附件" prop="attachment_ids" required>
+          <el-upload
+            :action="uploadAction"
+            :headers="uploadHeaders"
+            :on-success="handleUploadSuccess"
+            :on-remove="handleUploadRemove"
+            :file-list="fileList"
+            :before-upload="beforeUpload"
+            :limit="10"
+          >
+            <el-button type="primary">
+              <el-icon><Upload /></el-icon>
+              上传凭证
+            </el-button>
+            <template #tip>
+              <div class="el-upload__tip">支持jpg/png/pdf格式，单个文件不超过100MB，最多10个</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" @click="handleSubmit" :loading="loading">提交</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { createTransaction } from '@/api/transaction'
+import { getCategoryList } from '@/api/category'
+import type { FormInstance, FormRules, UploadUserFile, UploadProps } from 'element-plus'
+import { ElMessage } from 'element-plus'
+
+const router = useRouter()
+const formRef = ref<FormInstance>()
+const loading = ref(false)
+
+const categories = ref([])
+const fileList = ref<UploadUserFile[]>([])
+const attachmentIds = ref<string[]>([])
+
+const uploadAction = '/api/v1/attachments'
+const uploadHeaders = {
+  Authorization: `Bearer ${localStorage.getItem('token')}`
+}
+
+const form = reactive({
+  project_name: '',
+  category_id: '',
+  amount: 0,
+  transaction_time: new Date(),
+  remark: '',
+  attachment_ids: [] as string[]
+})
+
+const rules: FormRules = {
+  project_name: [{ required: true, message: '请输入来源项目', trigger: 'blur' }],
+  amount: [{ required: true, message: '请输入金额', trigger: 'blur' }],
+  transaction_time: [{ required: true, message: '请选择交易时间', trigger: 'change' }],
+  attachment_ids: [
+    { required: true, message: '请上传至少一个凭证附件', trigger: 'change' }
+  ]
+}
+
+async function loadCategories() {
+  try {
+    const res = await getCategoryList({ page: 1, page_size: 100 })
+    categories.value = res.data.list
+  } catch (error) {
+    console.error('Failed to load categories:', error)
+  }
+}
+
+const beforeUpload: UploadProps['beforeUpload'] = (file) => {
+  const isValidType = ['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)
+  if (!isValidType) {
+    ElMessage.error('只能上传jpg/png/pdf格式的文件')
+    return false
+  }
+  const isValidSize = file.size <= 100 * 1024 * 1024
+  if (!isValidSize) {
+    ElMessage.error('文件大小不能超过100MB')
+    return false
+  }
+  return true
+}
+
+function handleUploadSuccess(response: any) {
+  if (response.code === 0) {
+    attachmentIds.value.push(response.data.attachment_id)
+    form.attachment_ids = attachmentIds.value
+    ElMessage.success('上传成功')
+  }
+}
+
+function handleUploadRemove() {
+  // 重新获取attachment_ids
+  form.attachment_ids = fileList.value
+    .filter(f => f.status === 'success' && f.response?.code === 0)
+    .map(f => f.response.data.attachment_id)
+  attachmentIds.value = form.attachment_ids
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    if (form.attachment_ids.length === 0) {
+      ElMessage.warning('请上传至少一个凭证附件')
+      return
+    }
+
+    loading.value = true
+    try {
+      const data = {
+        ...form,
+        amount: Math.abs(form.amount),
+        transaction_time: (form.transaction_time as Date).toISOString().slice(0, 19).replace('T', ' ')
+      }
+      await createTransaction(data)
+      ElMessage.success('登记成功')
+      router.push('/transaction/list')
+    } catch (error) {
+      console.error('Failed to create transaction:', error)
+    } finally {
+      loading.value = false
+    }
+  })
+}
+
+function handleReset() {
+  formRef.value?.resetFields()
+  fileList.value = []
+  attachmentIds.value = []
+  form.attachment_ids = []
+}
+
+onMounted(() => {
+  loadCategories()
+})
+</script>
+
+<style scoped>
+.income-form {
+  padding: 20px;
+}
+
+.unit {
+  margin-left: 10px;
+  color: #909399;
+}
+
+:deep(.el-input-number) {
+  width: 200px;
+}
+</style>

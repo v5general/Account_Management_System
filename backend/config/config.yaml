@@ -1,0 +1,23 @@
+server:
+  port: "8080"
+  mode: debug  # 开发模式使用debug，生产环境使用release
+
+database:
+  host: localhost
+  port: 3306
+  database: account_management
+  username: root
+  password: "060928"
+
+jwt:
+  secret: your_jwt_secret_key_change_in_production  # 生产环境请更换
+  expire: 86400  # 24小时
+
+oss:
+  type: local  # local/aliyun/tencent
+  access_key: ""
+  secret_key: ""
+  bucket: ""
+  region: ""
+  endpoint: ""
+  upload_path: ./uploads  # 本地存储路径

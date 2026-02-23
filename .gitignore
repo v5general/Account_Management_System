@@ -1,0 +1,74 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+account-management-system
+account-management-system.exe
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# Backend specific
+backend/uploads/
+backend/*.db
+backend/*.log
+
+# Frontend specific
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.output/
+
+# IDE specific
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.cache
+
+# OS specific
+Thumbs.db
+.DS_Store
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Claude Code specific
+.claude/
