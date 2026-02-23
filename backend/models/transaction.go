@@ -2,8 +2,6 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // Transaction 收支流水模型
@@ -17,9 +15,9 @@ type Transaction struct {
 	Remark           string         `gorm:"column:remark;size:500" json:"remark"`
 	Status           int            `gorm:"column:status;default:0" json:"status"` // 0-待审核，1-已审核，2-已驳回
 	CreatorID        string         `gorm:"column:creator_id;size:32;not null" json:"creator_id"`
+	IsDeleted        int            `gorm:"column:is_deleted;default:0" json:"is_deleted"` // 0-未删除，1-已删除
 	CreateTime       time.Time      `gorm:"column:create_time;autoCreateTime" json:"create_time"`
 	UpdateTime       time.Time      `gorm:"column:update_time;autoUpdateTime" json:"update_time"`
-	DeleteTime       gorm.DeletedAt `gorm:"column:delete_time;index" json:"-"`
 
 	// 关联
 	Category   *Category    `gorm:"foreignKey:CategoryID" json:"category,omitempty"`

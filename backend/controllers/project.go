@@ -60,7 +60,7 @@ func ListProjects(c *gin.Context) {
 	var projects []models.Project
 	var total int64
 
-	query := database.DB.Model(&models.Project{})
+	query := database.DB.Model(&models.Project{}).Where("is_deleted = ?", 0)
 	if departmentID != "" {
 		query = query.Where("department_id = ?", departmentID)
 	}
@@ -85,7 +85,7 @@ func ListProjects(c *gin.Context) {
 func GetProject(c *gin.Context) {
 	id := c.Param("id")
 	var project models.Project
-	if err := database.DB.Where("project_id = ?", id).First(&project).Error; err != nil {
+	if err := database.DB.Where("is_deleted = ?", 0).Where("project_id = ?", id).First(&project).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "项目不存在"))
 		return
 	}
@@ -103,7 +103,7 @@ func UpdateProject(c *gin.Context) {
 	}
 
 	var project models.Project
-	if err := database.DB.Where("project_id = ?", id).First(&project).Error; err != nil {
+	if err := database.DB.Where("is_deleted = ?", 0).Where("project_id = ?", id).First(&project).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "项目不存在"))
 		return
 	}
@@ -139,13 +139,13 @@ func DeleteProject(c *gin.Context) {
 
 	// 检查是否有收支记录关联
 	var transCount int64
-	database.DB.Model(&models.Transaction{}).Where("project_id = ?", id).Count(&transCount)
+	database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).Where("project_id = ?", id).Count(&transCount)
 	if transCount > 0 {
 		c.JSON(200, utils.ErrorResponse(2001, "该项目有关联的收支记录，无法删除"))
 		return
 	}
 
-	if err := database.DB.Where("project_id = ?", id).Delete(&models.Project{}).Error; err != nil {
+	if err := database.DB.Model(&models.Project{}).Where("project_id = ?", id).Update("is_deleted", 1).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "删除项目失败"))
 		return
 	}

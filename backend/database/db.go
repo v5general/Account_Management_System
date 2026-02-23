@@ -76,7 +76,7 @@ func AutoMigrate() error {
 func InitData() error {
 	// 检查是否已有部门
 	var deptCount int64
-	DB.Model(&models.Department{}).Count(&deptCount)
+	DB.Model(&models.Department{}).Where("is_deleted = ?", 0).Count(&deptCount)
 	if deptCount == 0 {
 		// 创建预设部门
 		departments := []models.Department{
@@ -93,7 +93,7 @@ func InitData() error {
 
 	// 检查是否已有用户
 	var count int64
-	DB.Model(&models.User{}).Count(&count)
+	DB.Model(&models.User{}).Where("is_deleted = ?", 0).Count(&count)
 	if count == 0 {
 		// 创建默认管理员
 		hashedPassword, _ := utils.HashPassword("admin123")
@@ -115,17 +115,22 @@ func InitData() error {
 
 	// 检查是否已有分类
 	var catCount int64
-	DB.Model(&models.Category{}).Count(&catCount)
+	DB.Model(&models.Category{}).Where("is_deleted = ?", 0).Count(&catCount)
 	if catCount == 0 {
 		// 创建预设费用分类
 		categories := []models.Category{
-			{CategoryID: "category001", Name: "工资", Description: "员工工资发放", SortOrder: 1},
-			{CategoryID: "category002", Name: "设备采购", Description: "办公设备、生产设备采购", SortOrder: 2},
-			{CategoryID: "category003", Name: "服务购买", Description: "外部服务采购", SortOrder: 3},
-			{CategoryID: "category004", Name: "差旅费", Description: "出差交通、住宿费用", SortOrder: 4},
-			{CategoryID: "category005", Name: "业务招待费", Description: "客户招待费用", SortOrder: 5},
-			{CategoryID: "category006", Name: "办公费用", Description: "日常办公用品采购", SortOrder: 6},
-			{CategoryID: "category007", Name: "其他", Description: "其他费用", SortOrder: 99},
+			// 收入分类
+			{CategoryID: "category001", Name: "服务收入", Type: "INCOME", Description: "提供服务获得的收入", SortOrder: 1},
+			{CategoryID: "category002", Name: "销售收入", Type: "INCOME", Description: "产品销售收入", SortOrder: 2},
+			{CategoryID: "category003", Name: "其他收入", Type: "INCOME", Description: "其他收入来源", SortOrder: 99},
+			// 支出分类
+			{CategoryID: "category004", Name: "工资", Type: "EXPENSE", Description: "员工工资发放", SortOrder: 1},
+			{CategoryID: "category005", Name: "设备采购", Type: "EXPENSE", Description: "办公设备、生产设备采购", SortOrder: 2},
+			{CategoryID: "category006", Name: "服务购买", Type: "EXPENSE", Description: "外部服务采购", SortOrder: 3},
+			{CategoryID: "category007", Name: "差旅费", Type: "EXPENSE", Description: "出差交通、住宿费用", SortOrder: 4},
+			{CategoryID: "category008", Name: "业务招待费", Type: "EXPENSE", Description: "客户招待费用", SortOrder: 5},
+			{CategoryID: "category009", Name: "办公费用", Type: "EXPENSE", Description: "日常办公用品采购", SortOrder: 6},
+			{CategoryID: "category010", Name: "其他", Type: "EXPENSE", Description: "其他费用", SortOrder: 99},
 		}
 		if err := DB.Create(&categories).Error; err != nil {
 			return fmt.Errorf("创建分类失败: %w", err)

@@ -11,6 +11,7 @@ import (
 // CreateCategoryRequest 创建分类请求
 type CreateCategoryRequest struct {
 	Name        string `json:"name" binding:"required"`
+	Type        string `json:"type" binding:"required,oneof=INCOME EXPENSE"`
 	Description string `json:"description"`
 	SortOrder   int    `json:"sort_order"`
 }
@@ -34,6 +35,7 @@ type ListCategoriesResponse struct {
 type CategoryInfo struct {
 	CategoryID  string `json:"category_id"`
 	Name        string `json:"name"`
+	Type        string `json:"type"`
 	Description string `json:"description"`
 	SortOrder   int    `json:"sort_order"`
 	CreateTime  string `json:"create_time"`
@@ -49,7 +51,7 @@ func CreateCategory(c *gin.Context) {
 
 	// 检查分类名称是否已存在
 	var count int64
-	database.DB.Model(&models.Category{}).Where("name = ?", req.Name).Count(&count)
+	database.DB.Model(&models.Category{}).Where("is_deleted = ?", 0).Where("name = ?", req.Name).Count(&count)
 	if count > 0 {
 		c.JSON(200, utils.ErrorResponse(2003, "分类名称已存在"))
 		return
@@ -58,6 +60,7 @@ func CreateCategory(c *gin.Context) {
 	category := models.Category{
 		CategoryID:  utils.GenerateID("category"),
 		Name:        req.Name,
+		Type:        req.Type,
 		Description: req.Description,
 		SortOrder:   req.SortOrder,
 		IsDeleted:   0,
@@ -68,6 +71,9 @@ func CreateCategory(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	LogOperation(c, "CREATE", "category", "创建分类: "+req.Name)
+
 	c.JSON(200, utils.SuccessResponse(gin.H{"category_id": category.CategoryID}))
 }
 
@@ -76,6 +82,7 @@ func ListCategories(c *gin.Context) {
 	page := 1
 	pageSize := 20
 	keyword := c.Query("keyword")
+	categoryType := c.Query("type")
 
 	// 获取分页参数
 	if p := c.Query("page"); p != "" {
@@ -89,7 +96,12 @@ func ListCategories(c *gin.Context) {
 		}
 	}
 
-	query := database.DB.Model(&models.Category{}).Where("is_deleted = 0")
+	query := database.DB.Model(&models.Category{}).Where("is_deleted = ?", 0)
+
+	// 按类型筛选
+	if categoryType != "" {
+		query = query.Where("type = ?", categoryType)
+	}
 
 	// 模糊搜索
 	if keyword != "" {
@@ -109,6 +121,7 @@ func ListCategories(c *gin.Context) {
 		list[i] = CategoryInfo{
 			CategoryID:  cat.CategoryID,
 			Name:        cat.Name,
+			Type:        cat.Type,
 			Description: cat.Description,
 			SortOrder:   cat.SortOrder,
 			CreateTime:  cat.CreateTime.Format("2006-01-02 15:04:05"),
@@ -139,7 +152,7 @@ func UpdateCategory(c *gin.Context) {
 
 	// 检查分类名称是否已被其他分类使用
 	var count int64
-	database.DB.Model(&models.Category{}).Where("name = ? AND category_id != ?", req.Name, categoryID).Count(&count)
+	database.DB.Model(&models.Category{}).Where("is_deleted = ?", 0).Where("name = ? AND category_id != ?", req.Name, categoryID).Count(&count)
 	if count > 0 {
 		c.JSON(200, utils.ErrorResponse(2003, "分类名称已存在"))
 		return
@@ -151,10 +164,13 @@ func UpdateCategory(c *gin.Context) {
 		"sort_order":  req.SortOrder,
 	}
 
-	if err := database.DB.Model(&models.Category{}).Where("category_id = ?", categoryID).Updates(updates).Error; err != nil {
+	if err := database.DB.Model(&models.Category{}).Where("is_deleted = ?", 0).Where("category_id = ?", categoryID).Updates(updates).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "更新分类失败"))
 		return
 	}
+
+	// 记录操作日志
+	LogOperation(c, "UPDATE", "category", "更新分类ID: "+categoryID)
 
 	c.JSON(200, utils.SuccessResponse(nil))
 }
@@ -168,10 +184,13 @@ func DeleteCategory(c *gin.Context) {
 	}
 
 	// 软删除
-	if err := database.DB.Model(&models.Category{}).Where("category_id = ?", categoryID).Update("is_deleted", 1).Error; err != nil {
+	if err := database.DB.Model(&models.Category{}).Where("is_deleted = ?", 0).Where("category_id = ?", categoryID).Update("is_deleted", 1).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "删除分类失败"))
 		return
 	}
+
+	// 记录操作日志
+	LogOperation(c, "DELETE", "category", "删除分类ID: "+categoryID)
 
 	c.JSON(200, utils.SuccessResponse(nil))
 }
