@@ -69,7 +69,7 @@ func GetStatistics(c *gin.Context) {
 	// 设置结束时间为当天的23:59:59
 	endTime = endTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 
-	query := database.DB.Model(&models.Transaction{}).
+	query := database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).
 		Where("transaction_time >= ? AND transaction_time <= ?", startTime, endTime)
 
 	var totalIncome, totalExpense float64
@@ -113,7 +113,7 @@ func getStatisticsDetails(dimension string, startTime, endTime time.Time, netAmo
 	switch dimension {
 	case "project":
 		// 按项目统计
-		rows, _ := database.DB.Model(&models.Transaction{}).
+		rows, _ := database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).
 			Select("project_name as key, "+
 				"COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) as income, "+
 				"COALESCE(SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END), 0) as expense, "+
@@ -145,7 +145,7 @@ func getStatisticsDetails(dimension string, startTime, endTime time.Time, netAmo
 
 	case "person":
 		// 按人员统计
-		rows, _ := database.DB.Model(&models.Transaction{}).
+		rows, _ := database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).
 			Select("t_user.username as key, "+
 				"COALESCE(SUM(CASE WHEN t_transaction.amount > 0 THEN t_transaction.amount ELSE 0 END), 0) as income, "+
 				"COALESCE(SUM(CASE WHEN t_transaction.amount < 0 THEN t_transaction.amount ELSE 0 END), 0) as expense, "+
@@ -178,7 +178,7 @@ func getStatisticsDetails(dimension string, startTime, endTime time.Time, netAmo
 
 	case "category":
 		// 按分类统计
-		rows, _ := database.DB.Model(&models.Transaction{}).
+		rows, _ := database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).
 			Select("t_category.name as key, "+
 				"COALESCE(SUM(CASE WHEN t_transaction.amount > 0 THEN t_transaction.amount ELSE 0 END), 0) as income, "+
 				"COALESCE(SUM(CASE WHEN t_transaction.amount < 0 THEN t_transaction.amount ELSE 0 END), 0) as expense, "+

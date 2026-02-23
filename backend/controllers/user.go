@@ -55,7 +55,7 @@ func CreateUser(c *gin.Context) {
 
 	// 检查用户名是否已存在
 	var count int64
-	database.DB.Model(&models.User{}).Where("username = ?", req.Username).Count(&count)
+	database.DB.Model(&models.User{}).Where("is_deleted = ?", 0).Where("username = ?", req.Username).Count(&count)
 	if count > 0 {
 		c.JSON(200, utils.ErrorResponse(2003, "用户名已存在"))
 		return
@@ -109,7 +109,7 @@ func ListUsers(c *gin.Context) {
 		}
 	}
 
-	query := database.DB.Model(&models.User{})
+	query := database.DB.Model(&models.User{}).Where("is_deleted = ?", 0)
 
 	// 筛选条件
 	if role != "" {
@@ -177,7 +177,7 @@ func UpdateUser(c *gin.Context) {
 		updates["status"] = *req.Status
 	}
 
-	if err := database.DB.Model(&models.User{}).Where("user_id = ?", userID).Updates(updates).Error; err != nil {
+	if err := database.DB.Model(&models.User{}).Where("is_deleted = ?", 0).Where("user_id = ?", userID).Updates(updates).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "更新用户失败"))
 		return
 	}
@@ -196,7 +196,7 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Delete(&models.User{}, "user_id = ?", userID).Error; err != nil {
+	if err := database.DB.Model(&models.User{}).Where("user_id = ?", userID).Update("is_deleted", 1).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "删除用户失败"))
 		return
 	}
@@ -224,7 +224,7 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Model(&models.User{}).Where("user_id = ?", userID).Update("password", hashedPassword).Error; err != nil {
+	if err := database.DB.Model(&models.User{}).Where("is_deleted = ?", 0).Where("user_id = ?", userID).Update("password", hashedPassword).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "重置密码失败"))
 		return
 	}

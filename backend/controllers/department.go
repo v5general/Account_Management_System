@@ -33,7 +33,7 @@ func CreateDepartment(c *gin.Context) {
 
 	// 检查部门名称是否已存在
 	var count int64
-	database.DB.Model(&models.Department{}).Where("name = ?", req.Name).Count(&count)
+	database.DB.Model(&models.Department{}).Where("is_deleted = ?", 0).Where("name = ?", req.Name).Count(&count)
 	if count > 0 {
 		c.JSON(200, utils.ErrorResponse(2003, "部门名称已存在"))
 		return
@@ -44,6 +44,7 @@ func CreateDepartment(c *gin.Context) {
 		Name:         req.Name,
 		Description:  req.Description,
 		SortOrder:    req.SortOrder,
+		IsDeleted:    0,
 	}
 
 	if err := database.DB.Create(&department).Error; err != nil {
@@ -60,7 +61,7 @@ func CreateDepartment(c *gin.Context) {
 // ListDepartments 获取部门列表
 func ListDepartments(c *gin.Context) {
 	var departments []models.Department
-	if err := database.DB.Order("sort_order ASC").Find(&departments).Error; err != nil {
+	if err := database.DB.Where("is_deleted = ?", 0).Order("sort_order ASC").Find(&departments).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "获取部门列表失败"))
 		return
 	}
@@ -72,7 +73,7 @@ func ListDepartments(c *gin.Context) {
 func GetDepartment(c *gin.Context) {
 	id := c.Param("id")
 	var department models.Department
-	if err := database.DB.Where("department_id = ?", id).First(&department).Error; err != nil {
+	if err := database.DB.Where("is_deleted = ?", 0).Where("department_id = ?", id).First(&department).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "部门不存在"))
 		return
 	}
@@ -90,7 +91,7 @@ func UpdateDepartment(c *gin.Context) {
 	}
 
 	var department models.Department
-	if err := database.DB.Where("department_id = ?", id).First(&department).Error; err != nil {
+	if err := database.DB.Where("is_deleted = ?", 0).Where("department_id = ?", id).First(&department).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "部门不存在"))
 		return
 	}
@@ -98,7 +99,7 @@ func UpdateDepartment(c *gin.Context) {
 	// 如果修改名称，检查是否重复
 	if req.Name != "" && req.Name != department.Name {
 		var count int64
-		database.DB.Model(&models.Department{}).Where("name = ? AND department_id != ?", req.Name, id).Count(&count)
+		database.DB.Model(&models.Department{}).Where("is_deleted = ?", 0).Where("name = ? AND department_id != ?", req.Name, id).Count(&count)
 		if count > 0 {
 			c.JSON(200, utils.ErrorResponse(2003, "部门名称已存在"))
 			return
@@ -131,7 +132,7 @@ func DeleteDepartment(c *gin.Context) {
 
 	// 检查是否有用户关联
 	var userCount int64
-	database.DB.Model(&models.User{}).Where("department_id = ?", id).Count(&userCount)
+	database.DB.Model(&models.User{}).Where("is_deleted = ?", 0).Where("department_id = ?", id).Count(&userCount)
 	if userCount > 0 {
 		c.JSON(200, utils.ErrorResponse(2001, "该部门下有用户，无法删除"))
 		return
@@ -139,13 +140,14 @@ func DeleteDepartment(c *gin.Context) {
 
 	// 检查是否有项目关联
 	var projectCount int64
-	database.DB.Model(&models.Project{}).Where("department_id = ?", id).Count(&projectCount)
+	database.DB.Model(&models.Project{}).Where("is_deleted = ?", 0).Where("department_id = ?", id).Count(&projectCount)
 	if projectCount > 0 {
 		c.JSON(200, utils.ErrorResponse(2001, "该部门下有关联项目，无法删除"))
 		return
 	}
 
-	if err := database.DB.Where("department_id = ?", id).Delete(&models.Department{}).Error; err != nil {
+	// 软删除
+	if err := database.DB.Model(&models.Department{}).Where("is_deleted = ?", 0).Where("department_id = ?", id).Update("is_deleted", 1).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "删除部门失败"))
 		return
 	}
@@ -165,9 +167,9 @@ func GetDepartmentUsers(c *gin.Context) {
 	var users []models.User
 	var total int64
 
-	database.DB.Model(&models.User{}).Where("department_id = ?", id).Count(&total)
+	database.DB.Model(&models.User{}).Where("is_deleted = ?", 0).Where("department_id = ?", id).Count(&total)
 	offset := (page - 1) * pageSize
-	if err := database.DB.Where("department_id = ?", id).
+	if err := database.DB.Where("is_deleted = ?", 0).Where("department_id = ? AND user_id != ?", id, id, "0").
 		Offset(offset).
 		Limit(pageSize).
 		Find(&users).Error; err != nil {

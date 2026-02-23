@@ -171,7 +171,7 @@ func ListTransactions(c *gin.Context) {
 		}
 	}
 
-	query := database.DB.Model(&models.Transaction{}).Preload("Category").Preload("Project").Preload("Person").Preload("Creator").Preload("Attachments")
+	query := database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).Preload("Category").Preload("Project").Preload("Person").Preload("Creator").Preload("Attachments")
 
 	// 权限控制：员工只能查看本人关联的记录
 	role := c.GetString("role")
@@ -290,7 +290,7 @@ func GetTransaction(c *gin.Context) {
 
 	var transaction models.Transaction
 	if err := database.DB.Preload("Category").Preload("Project").Preload("Person").Preload("Creator").Preload("Attachments").
-		Where("record_id = ?", recordID).First(&transaction).Error; err != nil {
+		Where("is_deleted = ?", 0).Where("record_id = ?", recordID).First(&transaction).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "记录不存在"))
 		return
 	}
@@ -348,7 +348,7 @@ func UpdateTransaction(c *gin.Context) {
 		updates["status"] = req.Status
 	}
 
-	if err := database.DB.Model(&models.Transaction{}).Where("record_id = ?", recordID).Updates(updates).Error; err != nil {
+	if err := database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).Where("record_id = ?", recordID).Updates(updates).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "更新记录失败"))
 		return
 	}
@@ -364,7 +364,7 @@ func DeleteTransaction(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Delete(&models.Transaction{}, "record_id = ?", recordID).Error; err != nil {
+	if err := database.DB.Model(&models.Transaction{}).Where("record_id = ?", recordID).Update("is_deleted", 1).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "删除记录失败"))
 		return
 	}
@@ -389,7 +389,7 @@ func ApproveTransaction(c *gin.Context) {
 	}
 
 	var transaction models.Transaction
-	if err := database.DB.Where("record_id = ?", recordID).First(&transaction).Error; err != nil {
+	if err := database.DB.Where("is_deleted = ?", 0).Where("record_id = ?", recordID).First(&transaction).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "记录不存在"))
 		return
 	}
@@ -432,7 +432,7 @@ func RejectTransaction(c *gin.Context) {
 	}
 
 	var transaction models.Transaction
-	if err := database.DB.Where("record_id = ?", recordID).First(&transaction).Error; err != nil {
+	if err := database.DB.Where("is_deleted = ?", 0).Where("record_id = ?", recordID).First(&transaction).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "记录不存在"))
 		return
 	}
