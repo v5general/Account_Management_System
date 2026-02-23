@@ -1,0 +1,35 @@
+package models
+
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
+// Transaction 收支流水模型
+type Transaction struct {
+	RecordID         string         `gorm:"column:record_id;primaryKey;size:32" json:"record_id"`
+	Amount           float64        `gorm:"column:amount;type:decimal(15,2);not null" json:"amount"` // 正数=收入，负数=支出
+	CategoryID       *string        `gorm:"column:category_id;size:32" json:"category_id"`
+	ProjectID        *string        `gorm:"column:project_id;size:32" json:"project_id"` // 关联项目ID
+	PersonID         *string        `gorm:"column:person_id;size:32" json:"person_id"`
+	TransactionTime  time.Time      `gorm:"column:transaction_time;not null" json:"transaction_time"`
+	Remark           string         `gorm:"column:remark;size:500" json:"remark"`
+	Status           int            `gorm:"column:status;default:0" json:"status"` // 0-待审核，1-已审核，2-已驳回
+	CreatorID        string         `gorm:"column:creator_id;size:32;not null" json:"creator_id"`
+	CreateTime       time.Time      `gorm:"column:create_time;autoCreateTime" json:"create_time"`
+	UpdateTime       time.Time      `gorm:"column:update_time;autoUpdateTime" json:"update_time"`
+	DeleteTime       gorm.DeletedAt `gorm:"column:delete_time;index" json:"-"`
+
+	// 关联
+	Category   *Category    `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
+	Project    *Project     `gorm:"foreignKey:ProjectID" json:"project,omitempty"`
+	Person     *User        `gorm:"foreignKey:PersonID" json:"person,omitempty"`
+	Creator    *User        `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
+	Attachments []Attachment `gorm:"foreignKey:RecordID" json:"attachments,omitempty"`
+}
+
+// TableName 指定表名
+func (Transaction) TableName() string {
+	return "t_transaction"
+}
