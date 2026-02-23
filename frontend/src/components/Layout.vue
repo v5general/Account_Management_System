@@ -37,6 +37,7 @@
             <span>系统设置</span>
           </template>
           <el-menu-item index="/settings/user">用户管理</el-menu-item>
+          <el-menu-item index="/settings/department">部门管理</el-menu-item>
           <el-menu-item index="/settings/log">操作日志</el-menu-item>
         </el-sub-menu>
       </el-menu>

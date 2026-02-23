@@ -3,8 +3,10 @@ import request from '@/utils/request'
 export interface UserInfo {
   user_id: string
   username: string
+  real_name: string
   role: string
-  department: string
+  department_id: string
+  department?: string
   status?: number
   create_time?: string
 }
@@ -12,13 +14,15 @@ export interface UserInfo {
 export interface CreateUserParams {
   username: string
   password: string
+  real_name: string
   role: 'ADMIN' | 'EMPLOYEE' | 'FINANCE'
-  department?: string
+  department_id?: string
 }
 
 export interface UpdateUserParams {
+  real_name?: string
   role?: 'ADMIN' | 'EMPLOYEE' | 'FINANCE'
-  department?: string
+  department_id?: string
   status?: number
 }
 
@@ -26,6 +30,7 @@ export interface UserListParams {
   page?: number
   page_size?: number
   role?: string
+  department_id?: string
   keyword?: string
 }
 

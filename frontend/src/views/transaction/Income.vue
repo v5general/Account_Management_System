@@ -109,8 +109,8 @@ const rules: FormRules = {
 
 async function loadCategories() {
   try {
-    const res = await getCategoryList({ page: 1, page_size: 100 })
-    categories.value = res.data.list
+    const res = await getCategoryList({ page: 1, page_size: 100, type: 'INCOME' })
+    categories.value = res.data.list || []
   } catch (error) {
     console.error('Failed to load categories:', error)
   }
