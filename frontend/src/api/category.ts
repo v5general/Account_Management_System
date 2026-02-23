@@ -1,8 +1,12 @@
 import request from './index'
 
+// 分类类型：收入/支出
+export type CategoryType = 'INCOME' | 'EXPENSE'
+
 export interface Category {
   category_id: string
   name: string
+  type: CategoryType
   description: string
   sort_order: number
   is_deleted: number
@@ -12,6 +16,7 @@ export interface Category {
 
 export interface CreateCategoryParams {
   name: string
+  type: CategoryType
   description?: string
   sort_order?: number
 }
@@ -22,7 +27,7 @@ export function createCategory(data: CreateCategoryParams) {
 }
 
 // 获取分类列表
-export function getCategoryList(params?: { page?: number; page_size?: number; keyword?: string }) {
+export function getCategoryList(params?: { page?: number; page_size?: number; keyword?: string; type?: CategoryType }) {
   return request.get('/categories', { params })
 }
 

@@ -5,6 +5,8 @@ export default request
 // 导出各模块API
 export * from './auth'
 export * from './user'
+export * from './department'
+export * from './project'
 export * from './transaction'
 export * from './category'
 export * from './statistics'
