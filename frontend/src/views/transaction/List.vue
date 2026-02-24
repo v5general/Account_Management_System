@@ -98,6 +98,55 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 收支详情对话框 -->
+    <el-dialog v-model="detailDialogVisible" title="收支详情" width="700px">
+      <el-descriptions :column="2" border v-if="currentTransaction">
+        <el-descriptions-item label="交易时间">
+          {{ currentTransaction.transaction_time }}
+        </el-descriptions-item>
+        <el-descriptions-item label="金额">
+          <span :class="currentTransaction.amount > 0 ? 'income' : 'expense'">
+            {{ currentTransaction.amount > 0 ? '+' : '' }}{{ currentTransaction.amount }}
+          </span>
+        </el-descriptions-item>
+        <el-descriptions-item label="费用分类">
+          {{ currentTransaction.category?.name || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="项目">
+          {{ currentTransaction.project_name || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="关联人员">
+          {{ currentTransaction.person?.username || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag v-if="currentTransaction.status === 0" type="warning">待审核</el-tag>
+          <el-tag v-else-if="currentTransaction.status === 1" type="success">已审核</el-tag>
+          <el-tag v-else type="danger">已驳回</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="录入人">
+          {{ currentTransaction.creator?.username || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">
+          {{ currentTransaction.create_time }}
+        </el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">
+          {{ currentTransaction.remark || '-' }}
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer v-if="currentTransaction?.attachments?.length">
+        <div class="detail-attachments">
+          <div class="attachment-title">凭证附件：</div>
+          <div class="attachment-list">
+            <div v-for="att in currentTransaction.attachments" :key="att.attachment_id" class="attachment-item">
+              <el-icon><Document /></el-icon>
+              <span>{{ att.file_name }}</span>
+              <el-button link type="primary" @click="handleDownloadAttachment(att)">下载</el-button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -118,6 +167,8 @@ const categories = ref([])
 const dateRange = ref<[Date, Date]>()
 const attachmentDialogVisible = ref(false)
 const currentAttachments = ref<Attachment[]>([])
+const detailDialogVisible = ref(false)
+const currentTransaction = ref<Transaction | null>(null)
 
 const queryForm = reactive({
   page: 1,
@@ -181,8 +232,8 @@ function handleReset() {
 }
 
 function handleView(row: Transaction) {
-  // 显示详情对话框
-  console.log('View detail:', row)
+  currentTransaction.value = row
+  detailDialogVisible.value = true
 }
 
 function handleViewAttachments(row: Transaction) {
@@ -241,5 +292,14 @@ onMounted(() => {
   padding: 10px;
   border: 1px solid #ebeef5;
   border-radius: 4px;
+}
+
+.detail-attachments {
+  padding: 10px 0;
+}
+
+.attachment-title {
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 </style>
