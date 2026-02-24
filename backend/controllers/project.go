@@ -32,6 +32,14 @@ func CreateProject(c *gin.Context) {
 		return
 	}
 
+	// 检查项目名称是否已存在
+	var count int64
+	database.DB.Model(&models.Project{}).Where("is_deleted = ?", 0).Where("name = ?", req.Name).Count(&count)
+	if count > 0 {
+		c.JSON(200, utils.ErrorResponse(2003, "项目名称已存在"))
+		return
+	}
+
 	project := models.Project{
 		ProjectID:    utils.GenerateID("project"),
 		Name:         req.Name,
@@ -106,6 +114,16 @@ func UpdateProject(c *gin.Context) {
 	if err := database.DB.Where("is_deleted = ?", 0).Where("project_id = ?", id).First(&project).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "项目不存在"))
 		return
+	}
+
+	// 如果修改名称，检查是否重复
+	if req.Name != "" && req.Name != project.Name {
+		var count int64
+		database.DB.Model(&models.Project{}).Where("is_deleted = ?", 0).Where("name = ? AND project_id != ?", req.Name, id).Count(&count)
+		if count > 0 {
+			c.JSON(200, utils.ErrorResponse(2003, "项目名称已存在"))
+			return
+		}
 	}
 
 	updates := make(map[string]interface{})
