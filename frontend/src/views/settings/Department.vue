@@ -15,7 +15,11 @@
         <el-table-column prop="name" label="部门名称" width="200" />
         <el-table-column prop="description" label="描述" />
         <el-table-column prop="sort_order" label="排序" width="100" />
-        <el-table-column prop="create_time" label="创建时间" width="180" />
+        <el-table-column prop="create_time" label="创建时间" width="180">
+  <template #default="{ row }">
+    {{ formatDateTime(row.create_time) }}
+  </template>
+</el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
@@ -55,6 +59,7 @@ import { ref, reactive, onMounted } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import dayjs from 'dayjs'
 import {
   getDepartmentList,
   createDepartment,
@@ -62,6 +67,11 @@ import {
   deleteDepartment,
   type Department
 } from '@/api/department'
+
+// 格式化时间显示
+const formatDateTime = (dateTime: string) => {
+  return dayjs(dateTime).format('YYYY-MM-DD HH:mm:ss')
+}
 
 const loading = ref(false)
 const tableData = ref<Department[]>([])
