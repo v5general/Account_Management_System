@@ -164,10 +164,30 @@ async function handleCommand(command: string) {
   display: flex;
   align-items: center;
   cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.user-info:focus {
+  outline: none;
 }
 
 .el-main {
   background-color: #f0f2f5;
   padding: 20px;
+}
+
+/* 移除 dropdown 的边框 */
+.header-right :deep(.el-dropdown) {
+  border: none;
+  outline: none;
+}
+
+.header-right :deep(.el-dropdown:focus) {
+  outline: none;
+}
+
+.header-right :deep(.el-dropdown:focus-visible) {
+  outline: none;
 }
 </style>
