@@ -12,7 +12,7 @@ SET NAMES utf8mb4;
 -- ====================================
 CREATE TABLE IF NOT EXISTS `t_department` (
   `department_id` VARCHAR(32) NOT NULL PRIMARY KEY COMMENT '部门唯一标识',
-  `name` VARCHAR(50) NOT NULL UNIQUE COMMENT '部门名称',
+  `name` VARCHAR(50) NOT NULL COMMENT '部门名称',
   `description` VARCHAR(200) DEFAULT NULL COMMENT '部门描述',
   `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序顺序',
   `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标识：0-未删除，1-已删除',
