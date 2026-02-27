@@ -208,6 +208,23 @@
           {{ currentTransaction.remark || '-' }}
         </el-descriptions-item>
       </el-descriptions>
+      <!-- 图片预览区域 -->
+      <div v-if="previewImage" class="image-preview-container">
+        <el-image
+          :src="previewImage"
+          :preview-src-list="previewImages"
+          :initial-index="previewIndex"
+          fit="contain"
+          style="width: 100%; max-height: 500px"
+        >
+          <template #error>
+            <div class="image-error">
+              <el-icon><Picture /></el-icon>
+              <span>图片加载失败</span>
+            </div>
+          </template>
+        </el-image>
+      </div>
       <template #footer v-if="currentTransaction?.attachments?.length">
         <div class="detail-attachments">
           <div class="attachment-title">凭证附件：</div>
@@ -465,6 +482,10 @@ async function handleView(row: Transaction) {
   try {
     const res = await getTransactionDetail(row.record_id)
     currentTransaction.value = res.data
+    // 重置预览状态
+    previewImage.value = ''
+    previewImages.value = []
+    previewIndex.value = 0
     detailDialogVisible.value = true
   } catch (error) {
     console.error('获取详情失败:', error)
