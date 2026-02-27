@@ -4,7 +4,8 @@ export interface Transaction {
   record_id: string
   amount: number
   category_id?: string
-  project_name: string
+  project_id?: string
+  project_name?: string
   person_id?: string
   transaction_time: string
   remark: string
@@ -16,13 +17,20 @@ export interface Transaction {
     category_id: string
     name: string
   }
+  project?: {
+    project_id: string
+    name: string
+    description: string
+  }
   person?: {
     user_id: string
     username: string
+    real_name: string
   }
   creator?: {
     user_id: string
     username: string
+    real_name: string
   }
   attachments?: Attachment[]
 }
@@ -40,7 +48,7 @@ export interface Attachment {
 export interface CreateTransactionParams {
   amount: number
   category_id?: string
-  project_name: string
+  project_id?: string
   person_id?: string
   transaction_time: string
   remark?: string
@@ -53,7 +61,7 @@ export interface TransactionListParams {
   start_time?: string
   end_time?: string
   category_id?: string
-  project_name?: string
+  project_id?: string
   person_id?: string
   type?: 'income' | 'expense' | 'all'
 }
@@ -81,4 +89,14 @@ export function updateTransaction(id: string, data: Partial<Transaction>) {
 // 删除收支记录
 export function deleteTransaction(id: string) {
   return request.delete(`/transactions/${id}`)
+}
+
+// 审核通过
+export function approveTransaction(id: string, remark?: string) {
+  return request.put(`/transactions/${id}/approve`, { remark })
+}
+
+// 驳回
+export function rejectTransaction(id: string, reason: string) {
+  return request.put(`/transactions/${id}/reject`, { reason })
 }

@@ -38,15 +38,26 @@ func SetupRoutes(r *gin.Engine) {
 				auth.GET("/me", controllers.GetCurrentUser)
 			}
 
-			// 用户管理（需要管理员权限）
-			users := authorized.Group("/users")
-			users.Use(middlewares.RequireAdmin())
+			// 用户账号管理（用户可修改自己的账号信息）
+			account := authorized.Group("/account")
 			{
-				users.POST("", controllers.CreateUser)
+				account.PUT("/me", controllers.UpdateMyAccount)
+			}
+
+			// 员工列表（财务和管理员可访问，用于关联人员选择）
+			users := authorized.Group("/users")
+			{
 				users.GET("", controllers.ListUsers)
-				users.PUT("/:id", controllers.UpdateUser)
-				users.DELETE("/:id", controllers.DeleteUser)
-				users.POST("/:id/reset-password", controllers.ResetPassword)
+			}
+
+			// 用户管理（需要管理员权限）
+			usersAdmin := authorized.Group("/users")
+			usersAdmin.Use(middlewares.RequireAdmin())
+			{
+				usersAdmin.POST("", controllers.CreateUser)
+				usersAdmin.PUT("/:id", controllers.UpdateUser)
+				usersAdmin.DELETE("/:id", controllers.DeleteUser)
+				usersAdmin.POST("/:id/reset-password", controllers.ResetPassword)
 			}
 
 			// 部门管理（需要管理员权限）
@@ -64,21 +75,22 @@ func SetupRoutes(r *gin.Engine) {
 			// 项目管理
 			projects := authorized.Group("/projects")
 			{
-				projects.POST("", middlewares.RequireFinance(), controllers.CreateProject)
 				projects.GET("", controllers.ListProjects)
 				projects.GET("/:id", controllers.GetProject)
+				// 创建、更新、删除需要财务权限
+				projects.POST("", middlewares.RequireFinance(), controllers.CreateProject)
 				projects.PUT("/:id", middlewares.RequireFinance(), controllers.UpdateProject)
 				projects.DELETE("/:id", middlewares.RequireFinance(), controllers.DeleteProject)
 			}
 
 			// 费用分类（需要财务人员或管理员权限）
 			categories := authorized.Group("/categories")
-			categories.Use(middlewares.RequireFinance())
 			{
-				categories.POST("", controllers.CreateCategory)
 				categories.GET("", controllers.ListCategories)
-				categories.PUT("/:id", controllers.UpdateCategory)
-				categories.DELETE("/:id", controllers.DeleteCategory)
+				// 创建、更新、删除需要财务权限
+				categories.POST("", middlewares.RequireFinance(), controllers.CreateCategory)
+				categories.PUT("/:id", middlewares.RequireFinance(), controllers.UpdateCategory)
+				categories.DELETE("/:id", middlewares.RequireFinance(), controllers.DeleteCategory)
 			}
 
 			// 收支管理

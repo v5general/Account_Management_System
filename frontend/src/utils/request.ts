@@ -26,7 +26,12 @@ request.interceptors.response.use(
   (response) => {
     const res = response.data
     if (res.code !== 0) {
-      ElMessage.error(res.message || '请求失败')
+      // 以下错误码不显示提示：权限不足、数据不存在、令牌过期、账号已禁用等
+      // 注意：只有2003（用户名重复）需要显示提示
+      const silentCodes = [1002, 1003, 2002, 2004]
+      if (!silentCodes.includes(res.code)) {
+        ElMessage.error(res.message || '请求失败')
+      }
 
       // 1002: 令牌无效或过期
       if (res.code === 1002) {
@@ -43,7 +48,7 @@ request.interceptors.response.use(
     return res
   },
   (error) => {
-    ElMessage.error(error.message || '网络错误')
+    // 所有HTTP错误都不显示提示
     return Promise.reject(error)
   }
 )

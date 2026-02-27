@@ -26,6 +26,12 @@ export interface UpdateUserParams {
   status?: number
 }
 
+export interface UpdateMyAccountParams {
+  username?: string
+  real_name: string
+  password?: string
+}
+
 export interface UserListParams {
   page?: number
   page_size?: number
@@ -54,6 +60,11 @@ export function getUserList(params: UserListParams) {
 // 更新用户
 export function updateUser(id: string, data: UpdateUserParams) {
   return request.put(`/users/${id}`, data)
+}
+
+// 更新自己的账号信息
+export function updateMyAccount(data: UpdateMyAccountParams) {
+  return request.put('/account/me', data)
 }
 
 // 删除用户
