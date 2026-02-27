@@ -20,11 +20,11 @@ type Transaction struct {
 	UpdateTime       time.Time      `gorm:"column:update_time;autoUpdateTime" json:"update_time"`
 
 	// 关联
-	Category   *Category    `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
-	Project    *Project     `gorm:"foreignKey:ProjectID" json:"project,omitempty"`
-	Person     *User        `gorm:"foreignKey:PersonID" json:"person,omitempty"`
-	Creator    *User        `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
-	Attachments []Attachment `gorm:"foreignKey:RecordID" json:"attachments,omitempty"`
+	Category   *Category    `gorm:"foreignKey:CategoryID;References:CategoryID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"category,omitempty"`
+	Project    *Project     `gorm:"foreignKey:ProjectID;References:ProjectID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"project,omitempty"`
+	Person     *User        `gorm:"foreignKey:PersonID;References:UserID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"person,omitempty"`
+	Creator    *User        `gorm:"foreignKey:CreatorID;References:UserID" json:"creator,omitempty"`
+	Attachments []Attachment `gorm:"foreignKey:RecordID;References:RecordID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"attachments,omitempty"`
 }
 
 // TableName 指定表名

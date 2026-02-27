@@ -17,8 +17,15 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="关联项目" prop="project_name">
-          <el-input v-model="form.project_name" placeholder="请输入关联项目" />
+        <el-form-item label="关联项目" prop="project_id">
+          <el-select v-model="form.project_id" placeholder="请选择关联项目" clearable>
+            <el-option
+              v-for="proj in projects"
+              :key="proj.project_id"
+              :label="proj.name"
+              :value="proj.project_id"
+            />
+          </el-select>
         </el-form-item>
 
         <el-form-item label="关联人员" prop="person_id" required>
@@ -26,7 +33,7 @@
             <el-option
               v-for="user in users"
               :key="user.user_id"
-              :label="user.username"
+              :label="user.real_name"
               :value="user.user_id"
             />
           </el-select>
@@ -40,9 +47,9 @@
         <el-form-item label="交易时间" prop="transaction_time">
           <el-date-picker
             v-model="form.transaction_time"
-            type="datetime"
-            placeholder="选择日期时间"
-            format="YYYY-MM-DD HH:mm:ss"
+            type="date"
+            placeholder="选择日期"
+            format="YYYY-MM-DD"
           />
         </el-form-item>
 
@@ -76,6 +83,13 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <!-- 返回按钮 -->
+    <div class="back-button-container">
+      <el-button @click="$router.back()" circle size="large" class="back-button">
+        <el-icon><Back /></el-icon>
+      </el-button>
+    </div>
   </div>
 </template>
 
@@ -84,15 +98,18 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createTransaction } from '@/api/transaction'
 import { getCategoryList } from '@/api/category'
-import { getCurrentUser } from '@/api/auth'
+import { getProjectList } from '@/api/project'
+import { getUserList } from '@/api/user'
 import type { FormInstance, FormRules, UploadUserFile, UploadProps } from 'element-plus'
 import { ElMessage } from 'element-plus'
+import { Back, Upload } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 
 const categories = ref([])
+const projects = ref([])
 const users = ref([])
 const fileList = ref<UploadUserFile[]>([])
 const attachmentIds = ref<string[]>([])
@@ -103,7 +120,7 @@ const uploadHeaders = {
 }
 
 const form = reactive({
-  project_name: '',
+  project_id: '',
   category_id: '',
   person_id: '',
   amount: 0,
@@ -114,7 +131,7 @@ const form = reactive({
 
 const rules: FormRules = {
   category_id: [{ required: true, message: '请选择费用分类', trigger: 'change' }],
-  project_name: [{ required: true, message: '请输入关联项目', trigger: 'blur' }],
+  project_id: [{ required: true, message: '请选择关联项目', trigger: 'change' }],
   person_id: [{ required: true, message: '请选择关联人员', trigger: 'change' }],
   amount: [{ required: true, message: '请输入金额', trigger: 'blur' }],
   transaction_time: [{ required: true, message: '请选择交易时间', trigger: 'change' }],
@@ -132,14 +149,19 @@ async function loadCategories() {
   }
 }
 
+async function loadProjects() {
+  try {
+    const res = await getProjectList({ page: 1, page_size: 100 })
+    projects.value = res.data.list?.filter((p: any) => p.status === 1) || []
+  } catch (error) {
+    console.error('Failed to load projects:', error)
+  }
+}
+
 async function loadUsers() {
   try {
-    // 这里应该调用获取用户列表的API，暂时使用模拟数据
-    users.value = [
-      { user_id: '1', username: '张三' },
-      { user_id: '2', username: '李四' },
-      { user_id: '3', username: '王五' }
-    ]
+    const res = await getUserList({ page: 1, page_size: 100, role: 'EMPLOYEE' })
+    users.value = res.data.list || []
   } catch (error) {
     console.error('Failed to load users:', error)
   }
@@ -187,10 +209,13 @@ async function handleSubmit() {
 
     loading.value = true
     try {
+      const date = form.transaction_time as Date
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} 00:00:00`
+
       const data = {
         ...form,
         amount: -Math.abs(form.amount), // 支出为负数
-        transaction_time: (form.transaction_time as Date).toISOString().slice(0, 19).replace('T', ' ')
+        transaction_time: formattedDate
       }
       await createTransaction(data)
       ElMessage.success('登记成功')
@@ -212,6 +237,7 @@ function handleReset() {
 
 onMounted(() => {
   loadCategories()
+  loadProjects()
   loadUsers()
 })
 </script>
@@ -228,5 +254,20 @@ onMounted(() => {
 
 :deep(.el-input-number) {
   width: 200px;
+}
+
+/* 返回按钮 */
+.back-button-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 100;
+}
+
+.back-button {
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 </style>

@@ -27,6 +27,8 @@ type UserInfo struct {
 	RealName     string `json:"real_name"`
 	Role         string `json:"role"`
 	DepartmentID string `json:"department_id"`
+	Status       int    `json:"status"`
+	CreateTime   string `json:"create_time"`
 }
 
 // Login 用户登录
@@ -38,13 +40,19 @@ func Login(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := database.DB.Where("username = ? AND status = 1", req.Username).First(&user).Error; err != nil {
+	if err := database.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(1001, "用户名或密码错误"))
 		return
 	}
 
 	if !utils.CheckPassword(req.Password, user.Password) {
 		c.JSON(200, utils.ErrorResponse(1001, "用户名或密码错误"))
+		return
+	}
+
+	// 检查用户状态
+	if user.Status != 1 {
+		c.JSON(200, utils.ErrorResponse(1003, "该账号已被禁用"))
 		return
 	}
 
@@ -73,6 +81,8 @@ func Login(c *gin.Context) {
 			RealName:     user.RealName,
 			Role:         user.Role,
 			DepartmentID: user.DepartmentID,
+			Status:       user.Status,
+			CreateTime:   user.CreateTime.Format("2006-01-02 15:04:05"),
 		},
 	}))
 }
@@ -99,5 +109,7 @@ func GetCurrentUser(c *gin.Context) {
 		RealName:     user.RealName,
 		Role:         user.Role,
 		DepartmentID: user.DepartmentID,
+		Status:       user.Status,
+		CreateTime:   user.CreateTime.Format("2006-01-02 15:04:05"),
 	}))
 }

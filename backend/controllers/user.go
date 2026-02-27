@@ -20,10 +20,19 @@ type CreateUserRequest struct {
 
 // UpdateUserRequest 更新用户请求
 type UpdateUserRequest struct {
+	Username     string `json:"username" binding:"omitempty"`
 	RealName     string `json:"real_name"`
 	Role         string `json:"role" binding:"omitempty,oneof=ADMIN EMPLOYEE FINANCE"`
 	DepartmentID string `json:"department_id"`
 	Status       *int   `json:"status" binding:"omitempty,oneof=0 1"`
+	Password     string `json:"password" binding:"omitempty,min=8"`
+}
+
+// UpdateMyAccountRequest 更新自己的账号请求
+type UpdateMyAccountRequest struct {
+	Username string `json:"username" binding:"omitempty"`
+	RealName string `json:"real_name" binding:"required"`
+	Password string `json:"password" binding:"omitempty,min=8"`
 }
 
 // ResetPasswordRequest 重置密码请求
@@ -133,11 +142,13 @@ func ListUsers(c *gin.Context) {
 	list := make([]UserInfo, len(users))
 	for i, u := range users {
 		list[i] = UserInfo{
-			UserID:       u.UserID,
-			Username:     u.Username,
-			RealName:     u.RealName,
-			Role:         u.Role,
+			UserID:     u.UserID,
+			Username:   u.Username,
+			RealName:   u.RealName,
+			Role:       u.Role,
 			DepartmentID: u.DepartmentID,
+			Status:     u.Status,
+			CreateTime: u.CreateTime.Format("2006-01-02 15:04:05"),
 		}
 	}
 
@@ -163,7 +174,27 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	// 获取当前用户信息
+	var currentUser models.User
+	if err := database.DB.Where("user_id = ?", userID).First(&currentUser).Error; err != nil {
+		c.JSON(200, utils.ErrorResponse(2002, "用户不存在"))
+		return
+	}
+
+	// 如果修改用户名，检查是否重复
+	if req.Username != "" && req.Username != currentUser.Username {
+		var count int64
+		database.DB.Model(&models.User{}).Where("is_deleted = ?", 0).Where("username = ?", req.Username).Count(&count)
+		if count > 0 {
+			c.JSON(200, utils.ErrorResponse(2003, "用户名已存在"))
+			return
+		}
+	}
+
 	updates := make(map[string]interface{})
+	if req.Username != "" {
+		updates["username"] = req.Username
+	}
 	if req.RealName != "" {
 		updates["real_name"] = req.RealName
 	}
@@ -176,6 +207,15 @@ func UpdateUser(c *gin.Context) {
 	if req.Status != nil {
 		updates["status"] = *req.Status
 	}
+	// 处理密码更新
+	if req.Password != "" {
+		hashedPassword, err := utils.HashPassword(req.Password)
+		if err != nil {
+			c.JSON(200, utils.ErrorResponse(5000, "密码加密失败"))
+			return
+		}
+		updates["password"] = hashedPassword
+	}
 
 	if err := database.DB.Model(&models.User{}).Where("is_deleted = ?", 0).Where("user_id = ?", userID).Updates(updates).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(5000, "更新用户失败"))
@@ -184,6 +224,64 @@ func UpdateUser(c *gin.Context) {
 
 	// 记录操作日志
 	LogOperation(c, "UPDATE", "user", "更新用户ID: "+userID)
+
+	c.JSON(200, utils.SuccessResponse(nil))
+}
+
+// UpdateMyAccount 更新自己的账号信息
+func UpdateMyAccount(c *gin.Context) {
+	// 从上下文获取当前用户ID
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(200, utils.ErrorResponse(1002, "未登录"))
+		return
+	}
+
+	var req UpdateMyAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(200, utils.ErrorResponse(2001, "参数错误"))
+		return
+	}
+
+	// 获取当前用户信息
+	var currentUser models.User
+	if err := database.DB.Where("user_id = ?", userID).First(&currentUser).Error; err != nil {
+		c.JSON(200, utils.ErrorResponse(2002, "用户不存在"))
+		return
+	}
+
+	// 如果修改用户名，检查是否重复
+	if req.Username != "" && req.Username != currentUser.Username {
+		var count int64
+		database.DB.Model(&models.User{}).Where("is_deleted = ?", 0).Where("username = ?", req.Username).Count(&count)
+		if count > 0 {
+			c.JSON(200, utils.ErrorResponse(2003, "用户名已存在"))
+			return
+		}
+	}
+
+	updates := make(map[string]interface{})
+	if req.Username != "" {
+		updates["username"] = req.Username
+	}
+	updates["real_name"] = req.RealName
+	// 处理密码更新
+	if req.Password != "" {
+		hashedPassword, err := utils.HashPassword(req.Password)
+		if err != nil {
+			c.JSON(200, utils.ErrorResponse(5000, "密码加密失败"))
+			return
+		}
+		updates["password"] = hashedPassword
+	}
+
+	if err := database.DB.Model(&models.User{}).Where("user_id = ?", userID).Updates(updates).Error; err != nil {
+		c.JSON(200, utils.ErrorResponse(5000, "更新账号失败"))
+		return
+	}
+
+	// 记录操作日志
+	LogOperation(c, "UPDATE", "user", "更新账号信息")
 
 	c.JSON(200, utils.SuccessResponse(nil))
 }

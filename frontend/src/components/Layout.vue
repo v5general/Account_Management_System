@@ -14,20 +14,25 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-sub-menu index="/transaction">
+        <el-sub-menu index="/transaction" v-if="!userStore.isEmployee()">
           <template #title>
             <el-icon><Money /></el-icon>
             <span>收支管理</span>
           </template>
+          <el-menu-item index="/transaction/income" v-if="userStore.isFinance()">收入登记</el-menu-item>
+          <el-menu-item index="/transaction/expense" v-if="userStore.isFinance()">支出登记</el-menu-item>
+          <el-menu-item index="/transaction/audit" v-if="userStore.isFinance()">收支审核</el-menu-item>
           <el-menu-item index="/transaction/list">收支列表</el-menu-item>
-          <el-menu-item index="/transaction/income">收入登记</el-menu-item>
-          <el-menu-item index="/transaction/expense">支出登记</el-menu-item>
         </el-sub-menu>
-        <el-menu-item index="/category">
+        <el-menu-item index="/transaction/list" v-if="userStore.isEmployee()">
+          <el-icon><Money /></el-icon>
+          <span>我的收支</span>
+        </el-menu-item>
+        <el-menu-item index="/category" v-if="userStore.isFinance()">
           <el-icon><Folder /></el-icon>
           <span>费用分类</span>
         </el-menu-item>
-        <el-menu-item index="/statistics">
+        <el-menu-item index="/statistics" v-if="userStore.isFinance()">
           <el-icon><DataAnalysis /></el-icon>
           <span>统计报表</span>
         </el-menu-item>
@@ -36,10 +41,15 @@
             <el-icon><Setting /></el-icon>
             <span>系统设置</span>
           </template>
-          <el-menu-item index="/settings/user">用户管理</el-menu-item>
-          <el-menu-item index="/settings/department">部门管理</el-menu-item>
-          <el-menu-item index="/settings/project">项目管理</el-menu-item>
-          <el-menu-item index="/settings/log">操作日志</el-menu-item>
+          <!-- 员工和财务显示账号管理 -->
+          <el-menu-item index="/settings/account" v-if="!userStore.isAdmin()">账号管理</el-menu-item>
+          <!-- 管理员显示完整菜单 -->
+          <template v-if="userStore.isAdmin()">
+            <el-menu-item index="/settings/user">用户管理</el-menu-item>
+            <el-menu-item index="/settings/department">部门管理</el-menu-item>
+            <el-menu-item index="/settings/project">项目管理</el-menu-item>
+            <el-menu-item index="/settings/log">操作日志</el-menu-item>
+          </template>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -59,11 +69,11 @@
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-icon><User /></el-icon>
-              <span style="margin-left: 8px">管理员</span>
+              <span style="margin-left: 8px">{{ displayName }}</span>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="logout" class="logout-dropdown-item">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -80,16 +90,30 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/store/app'
+import { useUserStore } from '@/store/user'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
+const userStore = useUserStore()
 
 const sidebarWidth = computed(() => appStore.sidebarCollapsed ? '64px' : '200px')
 const currentRoute = computed(() => route.path)
 const currentRouteMeta = computed(() => route.meta.title as string)
+
+// 显示用户名和角色
+const displayName = computed(() => {
+  const user = userStore.userInfo
+  if (!user) return '未登录'
+  const roleName = {
+    ADMIN: '管理员',
+    FINANCE: '财务',
+    EMPLOYEE: '员工'
+  }[user.role] || user.role
+  return `${user.real_name}（${roleName}）`
+})
 
 async function handleCommand(command: string) {
   if (command === 'logout') {
@@ -189,5 +213,15 @@ async function handleCommand(command: string) {
 
 .header-right :deep(.el-dropdown:focus-visible) {
   outline: none;
+}
+
+/* 退出登录红色样式 */
+:deep(.logout-dropdown-item) {
+  color: #f56c6c !important;
+}
+
+:deep(.logout-dropdown-item:hover) {
+  color: #f56c6c !important;
+  background-color: #fef0f0 !important;
 }
 </style>

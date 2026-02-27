@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useUserStore } from '@/store/user'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -33,6 +34,12 @@ const routes: RouteRecordRaw[] = [
             meta: { title: '收支列表' }
           },
           {
+            path: 'audit',
+            name: 'TransactionAudit',
+            component: () => import('../views/transaction/Audit.vue'),
+            meta: { title: '收支审核', roles: ['ADMIN', 'FINANCE'] }
+          },
+          {
             path: 'income',
             name: 'Income',
             component: () => import('../views/transaction/Income.vue'),
@@ -62,31 +69,37 @@ const routes: RouteRecordRaw[] = [
         path: 'settings',
         name: 'Settings',
         redirect: '/settings/user',
-        meta: { title: '系统设置', roles: ['ADMIN'] },
+        meta: { title: '系统设置' },
         children: [
           {
             path: 'user',
             name: 'UserManage',
             component: () => import('../views/settings/User.vue'),
-            meta: { title: '用户管理' }
+            meta: { title: '用户管理', roles: ['ADMIN'] }
           },
           {
             path: 'department',
             name: 'DepartmentManage',
             component: () => import('../views/settings/Department.vue'),
-            meta: { title: '部门管理' }
+            meta: { title: '部门管理', roles: ['ADMIN'] }
           },
           {
             path: 'project',
             name: 'ProjectManage',
             component: () => import('../views/settings/Project.vue'),
-            meta: { title: '项目管理' }
+            meta: { title: '项目管理', roles: ['ADMIN'] }
           },
           {
             path: 'log',
             name: 'OperationLog',
             component: () => import('../views/settings/Log.vue'),
-            meta: { title: '操作日志' }
+            meta: { title: '操作日志', roles: ['ADMIN', 'FINANCE'] }
+          },
+          {
+            path: 'account',
+            name: 'AccountManage',
+            component: () => import('../views/settings/Account.vue'),
+            meta: { title: '账号管理', roles: ['EMPLOYEE', 'FINANCE'] }
           }
         ]
       }
@@ -106,6 +119,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token')
+  const userStore = useUserStore()
 
   // 需要认证但没有token，跳转登录页
   if (to.meta.requiresAuth && !token) {
@@ -113,11 +127,34 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
+  // 如果有token但没有用户信息，先获取用户信息
+  if (token && !userStore.userInfo) {
+    try {
+      await userStore.fetchUserInfo()
+    } catch {
+      // 获取用户信息失败，清除token并跳转登录页
+      userStore.clearToken()
+      next('/login')
+      return
+    }
+  }
+
   // 权限检查
-  if (to.meta.roles && token) {
+  if (to.meta.roles && userStore.userInfo) {
     const roles = to.meta.roles as string[]
-    // 简化权限检查，直接跳过
-    // 实际使用时可以在这里获取用户信息进行验证
+    if (!roles.includes(userStore.userInfo.role)) {
+      // 没有权限，跳转首页
+      next('/dashboard')
+      return
+    }
+  }
+
+  // 系统设置页面特殊处理
+  if (to.path.startsWith('/settings')) {
+    if (userStore.isEmployee() && to.path !== '/settings/account') {
+      next('/settings/account')
+      return
+    }
   }
 
   next()

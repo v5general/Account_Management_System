@@ -47,12 +47,14 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
+import { useUserStore } from '@/store/user'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const userStore = useUserStore()
 
 const loginForm = reactive({
   username: '',
@@ -73,7 +75,9 @@ async function handleLogin() {
     loading.value = true
     try {
       const res = await login(loginForm)
-      localStorage.setItem('token', res.data.token)
+      // 保存 token 和用户信息
+      userStore.setToken(res.data.token)
+      userStore.setUserInfo(res.data.user)
       ElMessage.success('登录成功')
       router.push('/dashboard')
     } catch (error) {

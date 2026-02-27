@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // CreateTransactionRequest 创建收支记录请求
@@ -45,6 +46,7 @@ type TransactionInfo struct {
 	Amount          float64          `json:"amount"`
 	CategoryID      *string          `json:"category_id"`
 	ProjectID       *string          `json:"project_id"`
+	ProjectName     string           `json:"project_name,omitempty"` // 扁平化的项目名称，方便列表显示
 	Project         *ProjectSummary  `json:"project,omitempty"`
 	PersonID        *string          `json:"person_id"`
 	TransactionTime string           `json:"transaction_time"`
@@ -76,6 +78,7 @@ type CategorySummary struct {
 type UserSummary struct {
 	UserID   string `json:"user_id"`
 	Username string `json:"username"`
+	RealName string `json:"real_name"`
 }
 
 // AttachmentInfo 附件信息
@@ -171,7 +174,16 @@ func ListTransactions(c *gin.Context) {
 		}
 	}
 
-	query := database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).Preload("Category").Preload("Project").Preload("Person").Preload("Creator").Preload("Attachments")
+	query := database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0).
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_deleted = ?", 0)
+		}).
+		Preload("Project", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_deleted = ?", 0)
+		}).
+		Preload("Person").
+		Preload("Creator").
+		Preload("Attachments")
 
 	// 权限控制：员工只能查看本人关联的记录
 	role := c.GetString("role")
@@ -207,12 +219,42 @@ func ListTransactions(c *gin.Context) {
 		query = query.Where("amount < 0")
 	}
 
-	var total int64
-	query.Count(&total)
-
+	// 先获取数据（包含关联）
 	var transactions []models.Transaction
 	offset := (page - 1) * pageSize
 	query.Order("transaction_time DESC").Offset(offset).Limit(pageSize).Find(&transactions)
+
+	// 重新构建查询来计算总数
+	var countQuery = database.DB.Model(&models.Transaction{}).Where("is_deleted = ?", 0)
+	if role == "EMPLOYEE" {
+		userID := c.GetString("user_id")
+		countQuery = countQuery.Where("person_id = ?", userID)
+	}
+	if startTime != "" {
+		countQuery = countQuery.Where("transaction_time >= ?", startTime)
+	}
+	if endTime != "" {
+		countQuery = countQuery.Where("transaction_time <= ?", endTime)
+	}
+	if categoryID != "" {
+		countQuery = countQuery.Where("category_id = ?", categoryID)
+	}
+	if projectID != "" {
+		countQuery = countQuery.Where("project_id = ?", projectID)
+	}
+	if personID != "" {
+		countQuery = countQuery.Where("person_id = ?", personID)
+	}
+	if role != "ADMIN" && role != "FINANCE" {
+		countQuery = countQuery.Where("status = ?", 1)
+	}
+	if transType == "income" {
+		countQuery = countQuery.Where("amount > 0")
+	} else if transType == "expense" {
+		countQuery = countQuery.Where("amount < 0")
+	}
+	var total int64
+	countQuery.Count(&total)
 
 	// 转换为响应格式
 	list := make([]TransactionInfo, len(transactions))
@@ -238,6 +280,7 @@ func ListTransactions(c *gin.Context) {
 			}
 		}
 		if t.Project != nil {
+			info.ProjectName = t.Project.Name
 			info.Project = &ProjectSummary{
 				ProjectID:   t.Project.ProjectID,
 				Name:        t.Project.Name,
@@ -248,12 +291,14 @@ func ListTransactions(c *gin.Context) {
 			info.Person = &UserSummary{
 				UserID:   t.Person.UserID,
 				Username: t.Person.Username,
+				RealName: t.Person.RealName,
 			}
 		}
 		if t.Creator != nil {
 			info.Creator = &UserSummary{
 				UserID:   t.Creator.UserID,
 				Username: t.Creator.Username,
+				RealName: t.Creator.RealName,
 			}
 		}
 
@@ -289,8 +334,17 @@ func GetTransaction(c *gin.Context) {
 	}
 
 	var transaction models.Transaction
-	if err := database.DB.Preload("Category").Preload("Project").Preload("Person").Preload("Creator").Preload("Attachments").
-		Where("is_deleted = ?", 0).Where("record_id = ?", recordID).First(&transaction).Error; err != nil {
+	if err := database.DB.Where("is_deleted = ?", 0).Where("record_id = ?", recordID).
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_deleted = ?", 0)
+		}).
+		Preload("Project", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_deleted = ?", 0)
+		}).
+		Preload("Person").
+		Preload("Creator").
+		Preload("Attachments").
+		First(&transaction).Error; err != nil {
 		c.JSON(200, utils.ErrorResponse(2002, "记录不存在"))
 		return
 	}
@@ -305,7 +359,63 @@ func GetTransaction(c *gin.Context) {
 		}
 	}
 
-	c.JSON(200, utils.SuccessResponse(transaction))
+	// 转换为响应格式
+	info := TransactionInfo{
+		RecordID:        transaction.RecordID,
+		Amount:          transaction.Amount,
+		CategoryID:      transaction.CategoryID,
+		ProjectID:       transaction.ProjectID,
+		PersonID:        transaction.PersonID,
+		TransactionTime: transaction.TransactionTime.Format("2006-01-02 15:04:05"),
+		Remark:          transaction.Remark,
+		Status:          transaction.Status,
+		CreatorID:       transaction.CreatorID,
+		CreateTime:      transaction.CreateTime.Format("2006-01-02 15:04:05"),
+		UpdateTime:      transaction.UpdateTime.Format("2006-01-02 15:04:05"),
+	}
+
+	if transaction.Category != nil {
+		info.Category = &CategorySummary{
+			CategoryID: transaction.Category.CategoryID,
+			Name:       transaction.Category.Name,
+		}
+	}
+	if transaction.Project != nil {
+		info.ProjectName = transaction.Project.Name
+		info.Project = &ProjectSummary{
+			ProjectID:   transaction.Project.ProjectID,
+			Name:        transaction.Project.Name,
+			Description: transaction.Project.Description,
+		}
+	}
+	if transaction.Person != nil {
+		info.Person = &UserSummary{
+			UserID:   transaction.Person.UserID,
+			Username: transaction.Person.Username,
+			RealName: transaction.Person.RealName,
+		}
+	}
+	if transaction.Creator != nil {
+		info.Creator = &UserSummary{
+			UserID:   transaction.Creator.UserID,
+			Username: transaction.Creator.Username,
+			RealName: transaction.Creator.RealName,
+		}
+	}
+
+	// 附件信息
+	attachments := make([]AttachmentInfo, len(transaction.Attachments))
+	for i, a := range transaction.Attachments {
+		attachments[i] = AttachmentInfo{
+			AttachmentID: a.AttachmentID,
+			FileName:     a.FileName,
+			FileSize:     a.FileSize,
+			FileType:     a.FileType,
+		}
+	}
+	info.Attachments = attachments
+
+	c.JSON(200, utils.SuccessResponse(info))
 }
 
 // UpdateTransaction 更新收支记录
