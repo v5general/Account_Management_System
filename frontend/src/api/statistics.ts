@@ -3,8 +3,8 @@ import request from './index'
 export interface StatisticsParams {
   dimension: 'project' | 'person' | 'category'
   cycle: 'month' | 'quarter' | 'year'
-  start_time: string
-  end_time: string
+  start_time?: string
+  end_time?: string
 }
 
 export interface StatisticsResponse {

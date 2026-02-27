@@ -160,6 +160,7 @@ func ListTransactions(c *gin.Context) {
 	endTime := c.Query("end_time")
 	categoryID := c.Query("category_id")
 	personID := c.Query("person_id")
+	status := c.Query("status")
 	transType := c.DefaultQuery("type", "all")
 
 	// 获取分页参数
@@ -209,8 +210,10 @@ func ListTransactions(c *gin.Context) {
 	if personID != "" {
 		query = query.Where("person_id = ?", personID)
 	}
-	// 只显示已审核的记录（除非是管理员或财务人员）
-	if role != "ADMIN" && role != "FINANCE" {
+	// 如果明确指定了status参数，则使用指定的值；否则只显示已审核的记录（除非是管理员或财务人员）
+	if status != "" {
+		query = query.Where("status = ?", status)
+	} else if role != "ADMIN" && role != "FINANCE" {
 		query = query.Where("status = ?", 1)
 	}
 	if transType == "income" {
@@ -245,7 +248,10 @@ func ListTransactions(c *gin.Context) {
 	if personID != "" {
 		countQuery = countQuery.Where("person_id = ?", personID)
 	}
-	if role != "ADMIN" && role != "FINANCE" {
+	// 如果明确指定了status参数，则使用指定的值；否则只显示已审核的记录（除非是管理员或财务人员）
+	if status != "" {
+		countQuery = countQuery.Where("status = ?", status)
+	} else if role != "ADMIN" && role != "FINANCE" {
 		countQuery = countQuery.Where("status = ?", 1)
 	}
 	if transType == "income" {

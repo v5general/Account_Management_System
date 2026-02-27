@@ -310,18 +310,22 @@ function showCountDetail() {
 
 async function loadSummary() {
   try {
-    const res = await getTransactionList({ page: 1, page_size: 10 })
-    recentTransactions.value = res.data.list || []
+    // 获取最近的交易记录（用于显示最近收支）
+    const recentRes = await getTransactionList({ page: 1, page_size: 10 })
+    recentTransactions.value = recentRes.data.list || []
 
-    // 计算汇总
-    const list = res.data.list || []
+    // 获取所有审核通过的记录用于统计（使用较大的page_size获取所有数据）
+    const statsRes = await getTransactionList({ page: 1, page_size: 10000, status: 1 })
+    const list = statsRes.data.list || []
+
+    // 计算汇总（只统计审核通过的记录）
     incomeTransactions.value = list.filter((t: any) => t.amount >= 0)
     expenseTransactions.value = list.filter((t: any) => t.amount < 0)
     summary.value = {
       totalIncome: incomeTransactions.value.reduce((sum: number, t: any) => sum + t.amount, 0),
       totalExpense: expenseTransactions.value.reduce((sum: number, t: any) => sum + t.amount, 0),
       netAmount: 0,
-      recordCount: res.data.total || 0
+      recordCount: statsRes.data.total || 0
     }
     summary.value.netAmount = summary.value.totalIncome + summary.value.totalExpense
 

@@ -1,6 +1,6 @@
 <template>
   <div class="statistics-report">
-    <el-card>
+    <el-card v-loading="loading">
       <template #header>
         <div class="card-header">
           <span>统计报表</span>
@@ -29,10 +29,12 @@
             range-separator="至"
             start-placeholder="开始日期"
             end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
           />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleQuery">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
 
@@ -94,17 +96,24 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 返回按钮 -->
+    <div class="back-button-container">
+      <el-button @click="$router.back()" circle size="large" class="back-button">
+        <el-icon><Back /></el-icon>
+      </el-button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { getStatistics } from '@/api/statistics'
 import type { StatisticsResponse, StatisticsParams } from '@/api/statistics'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
-const dateRange = ref<[Date, Date]>()
+const dateRange = ref<string[]>()
 const statistics = ref<StatisticsResponse>({
   dimension: '',
   cycle: '',
@@ -121,9 +130,7 @@ const statistics = ref<StatisticsResponse>({
 
 const queryForm = reactive<StatisticsParams>({
   dimension: 'project',
-  cycle: 'month',
-  start_time: '',
-  end_time: ''
+  cycle: 'month'
 })
 
 const dimensionLabel = computed(() => {
@@ -140,26 +147,57 @@ function formatAmount(amount: number) {
 }
 
 async function handleQuery() {
-  if (!dateRange.value) {
-    ElMessage.warning('请选择时间范围')
-    return
-  }
+  console.log('handleQuery 开始执行')
+  console.log('queryForm:', queryForm)
+  console.log('dateRange:', dateRange.value)
 
   loading.value = true
   try {
-    const params = {
-      ...queryForm,
-      start_time: dateRange.value[0].toISOString().split('T')[0],
-      end_time: dateRange.value[1].toISOString().split('T')[0]
+    const params: StatisticsParams = {
+      dimension: queryForm.dimension,
+      cycle: queryForm.cycle
     }
+    // 只有选择了时间范围才添加时间参数
+    if (dateRange.value && dateRange.value.length === 2) {
+      params.start_time = dateRange.value[0]
+      params.end_time = dateRange.value[1]
+    }
+    console.log('请求参数:', params)
+
     const res = await getStatistics(params)
+    console.log('API 响应:', res)
+    console.log('统计数据:', res.data)
+    console.log('details:', res.data.details)
+
+    // 确保 details 不为 null
+    if (res.data.details === null) {
+      console.log('details 是 null，设置为空数组')
+      res.data.details = []
+    }
+
     statistics.value = res.data
+    console.log('设置 statistics.value 后:', statistics.value)
+    console.log('statistics.value.details:', statistics.value.details)
   } catch (error) {
     console.error('Failed to load statistics:', error)
+    ElMessage.error('加载统计数据失败')
   } finally {
     loading.value = false
   }
 }
+
+function handleReset() {
+  dateRange.value = undefined
+  queryForm.dimension = 'project'
+  queryForm.cycle = 'month'
+  // 重置后重新加载所有数据
+  handleQuery()
+}
+
+// 页面加载时自动查询所有数据
+onMounted(() => {
+  handleQuery()
+})
 </script>
 
 <style scoped>
@@ -215,5 +253,20 @@ async function handleQuery() {
 
 .detail-table .expense {
   color: #f56c6c;
+}
+
+/* 返回按钮 */
+.back-button-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 100;
+}
+
+.back-button {
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 </style>
