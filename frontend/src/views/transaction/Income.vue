@@ -7,7 +7,7 @@
 
       <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
         <el-form-item label="来源项目" prop="project_id">
-          <el-select v-model="form.project_id" placeholder="请选择来源项目" clearable>
+          <el-select v-model="form.project_id" placeholder="请选择来源项目" clearable style="width: 100%">
             <el-option
               v-for="proj in projects"
               :key="proj.project_id"
@@ -18,7 +18,7 @@
         </el-form-item>
 
         <el-form-item label="费用分类" prop="category_id">
-          <el-select v-model="form.category_id" placeholder="请选择费用分类" clearable>
+          <el-select v-model="form.category_id" placeholder="请选择费用分类" clearable style="width: 100%">
             <el-option
               v-for="cat in categories"
               :key="cat.category_id"
@@ -225,6 +225,35 @@ onMounted(() => {
 
 :deep(.el-input-number) {
   width: 200px;
+}
+
+/* 修复 el-select 显示问题 */
+:deep(.el-select) {
+  width: 100%;
+}
+
+:deep(.el-select__wrapper) {
+  min-height: 32px;
+  width: 100%;
+}
+
+:deep(.el-select__selection) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+:deep(.el-select__selected-item) {
+  display: inline-flex !important;
+  color: var(--el-text-color-regular);
+}
+
+:deep(.el-select__placeholder) {
+  color: var(--el-text-color-placeholder);
+}
+
+:deep(.el-select__input) {
+  color: var(--el-text-color-regular);
 }
 
 /* 返回按钮 */
