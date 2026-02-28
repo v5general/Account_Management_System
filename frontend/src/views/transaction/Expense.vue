@@ -7,7 +7,7 @@
 
       <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
         <el-form-item label="费用分类" prop="category_id">
-          <el-select v-model="form.category_id" placeholder="请选择费用分类" style="width: 100%">
+          <el-select v-model="category_id" placeholder="请选择费用分类" style="width: 100%">
             <el-option
               v-for="cat in categories"
               :key="cat.category_id"
@@ -18,7 +18,7 @@
         </el-form-item>
 
         <el-form-item label="关联项目" prop="project_id">
-          <el-select v-model="form.project_id" placeholder="请选择关联项目" clearable style="width: 100%">
+          <el-select v-model="project_id" placeholder="请选择关联项目" clearable style="width: 100%">
             <el-option
               v-for="proj in projects"
               :key="proj.project_id"
@@ -29,7 +29,7 @@
         </el-form-item>
 
         <el-form-item label="关联人员" prop="person_id" required>
-          <el-select v-model="form.person_id" placeholder="请选择关联人员" filterable style="width: 100%">
+          <el-select v-model="person_id" placeholder="请选择关联人员" filterable style="width: 100%">
             <el-option
               v-for="user in users"
               :key="user.user_id"
@@ -40,13 +40,13 @@
         </el-form-item>
 
         <el-form-item label="金额" prop="amount">
-          <el-input-number v-model="form.amount" :min="0.01" :precision="2" :step="100" />
+          <el-input-number v-model="amount" :min="0.01" :precision="2" :step="100" />
           <span class="unit">元</span>
         </el-form-item>
 
         <el-form-item label="交易时间" prop="transaction_time">
           <el-date-picker
-            v-model="form.transaction_time"
+            v-model="transaction_time"
             type="date"
             placeholder="选择日期"
             format="YYYY-MM-DD"
@@ -54,7 +54,7 @@
         </el-form-item>
 
         <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+          <el-input v-model="remark" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
 
         <el-form-item label="凭证附件" prop="attachment_ids" required>
@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createTransaction } from '@/api/transaction'
 import { getCategoryList } from '@/api/category'
@@ -119,15 +119,25 @@ const uploadHeaders = {
   Authorization: `Bearer ${localStorage.getItem('token')}`
 }
 
-const form = reactive({
-  project_id: '',
-  category_id: '',
-  person_id: '',
-  amount: 0,
-  transaction_time: new Date(),
-  remark: '',
-  attachment_ids: [] as string[]
-})
+// 使用 ref 确保响应性
+const project_id = ref('')
+const category_id = ref('')
+const person_id = ref('')
+const amount = ref(0)
+const transaction_time = ref(new Date())
+const remark = ref('')
+const attachment_ids = ref<string[]>([])
+
+// 用于提交的表单对象
+const form = computed(() => ({
+  project_id: project_id.value,
+  category_id: category_id.value,
+  person_id: person_id.value,
+  amount: amount.value,
+  transaction_time: transaction_time.value,
+  remark: remark.value,
+  attachment_ids: attachment_ids.value
+}))
 
 const rules: FormRules = {
   category_id: [{ required: true, message: '请选择费用分类', trigger: 'change' }],
@@ -183,17 +193,15 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
 
 function handleUploadSuccess(response: any) {
   if (response.code === 0) {
-    attachmentIds.value.push(response.data.attachment_id)
-    form.attachment_ids = attachmentIds.value
+    attachment_ids.value.push(response.data.attachment_id)
     ElMessage.success('上传成功')
   }
 }
 
 function handleUploadRemove() {
-  form.attachment_ids = fileList.value
+  attachment_ids.value = fileList.value
     .filter(f => f.status === 'success' && f.response?.code === 0)
     .map(f => f.response.data.attachment_id)
-  attachmentIds.value = form.attachment_ids
 }
 
 async function handleSubmit() {
@@ -202,19 +210,19 @@ async function handleSubmit() {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
 
-    if (form.attachment_ids.length === 0) {
+    if (attachment_ids.value.length === 0) {
       ElMessage.warning('请上传至少一个凭证附件')
       return
     }
 
     loading.value = true
     try {
-      const date = form.transaction_time as Date
+      const date = transaction_time.value as Date
       const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} 00:00:00`
 
       const data = {
-        ...form,
-        amount: -Math.abs(form.amount), // 支出为负数
+        ...form.value,
+        amount: -Math.abs(amount.value), // 支出为负数
         transaction_time: formattedDate
       }
       await createTransaction(data)
@@ -231,8 +239,13 @@ async function handleSubmit() {
 function handleReset() {
   formRef.value?.resetFields()
   fileList.value = []
-  attachmentIds.value = []
-  form.attachment_ids = []
+  attachment_ids.value = []
+  project_id.value = ''
+  category_id.value = ''
+  person_id.value = ''
+  amount.value = 0
+  transaction_time.value = new Date()
+  remark.value = ''
 }
 
 onMounted(() => {
