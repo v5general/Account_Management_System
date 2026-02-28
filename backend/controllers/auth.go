@@ -22,13 +22,14 @@ type LoginResponse struct {
 
 // UserInfo 用户信息
 type UserInfo struct {
-	UserID       string `json:"user_id"`
-	Username     string `json:"username"`
-	RealName     string `json:"real_name"`
-	Role         string `json:"role"`
-	DepartmentID string `json:"department_id"`
-	Status       int    `json:"status"`
-	CreateTime   string `json:"create_time"`
+	UserID         string `json:"user_id"`
+	Username       string `json:"username"`
+	RealName       string `json:"real_name"`
+	Role           string `json:"role"`
+	DepartmentID   string `json:"department_id"`
+	DepartmentName string `json:"department_name,omitempty"` // 部门名称
+	Status         int    `json:"status"`
+	CreateTime     string `json:"create_time"`
 }
 
 // Login 用户登录

@@ -21,7 +21,7 @@
             <el-tag v-else type="info">员工</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="department" label="部门" />
+        <el-table-column prop="department_name" label="部门" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">

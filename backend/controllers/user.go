@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // CreateUserRequest 创建用户请求
@@ -134,21 +135,29 @@ func ListUsers(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 
+	// 查询用户列表（包含部门信息）
 	var users []models.User
 	offset := (page - 1) * pageSize
-	query.Offset(offset).Limit(pageSize).Find(&users)
+	query.Preload("Department", func(db *gorm.DB) *gorm.DB {
+		return db.Where("is_deleted = ?", 0)
+	}).Order("create_time DESC").Offset(offset).Limit(pageSize).Find(&users)
 
 	// 转换为响应格式
 	list := make([]UserInfo, len(users))
 	for i, u := range users {
+		deptName := ""
+		if u.Department != nil {
+			deptName = u.Department.Name
+		}
 		list[i] = UserInfo{
-			UserID:     u.UserID,
-			Username:   u.Username,
-			RealName:   u.RealName,
-			Role:       u.Role,
-			DepartmentID: u.DepartmentID,
-			Status:     u.Status,
-			CreateTime: u.CreateTime.Format("2006-01-02 15:04:05"),
+			UserID:         u.UserID,
+			Username:       u.Username,
+			RealName:       u.RealName,
+			Role:           u.Role,
+			DepartmentID:   u.DepartmentID,
+			DepartmentName: deptName,
+			Status:         u.Status,
+			CreateTime:     u.CreateTime.Format("2006-01-02 15:04:05"),
 		}
 	}
 

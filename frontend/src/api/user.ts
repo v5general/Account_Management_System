@@ -6,6 +6,7 @@ export interface UserInfo {
   real_name: string
   role: string
   department_id: string
+  department_name?: string
   department?: string
   status?: number
   create_time?: string
