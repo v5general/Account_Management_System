@@ -34,12 +34,6 @@ const routes: RouteRecordRaw[] = [
             meta: { title: '收支列表' }
           },
           {
-            path: 'audit',
-            name: 'TransactionAudit',
-            component: () => import('../views/transaction/Audit.vue'),
-            meta: { title: '收支审核', roles: ['ADMIN', 'FINANCE'] }
-          },
-          {
             path: 'income',
             name: 'Income',
             component: () => import('../views/transaction/Income.vue'),
