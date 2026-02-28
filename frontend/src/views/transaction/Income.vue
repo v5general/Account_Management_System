@@ -241,11 +241,14 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  min-height: 20px;
 }
 
 :deep(.el-select__selected-item) {
   display: inline-flex !important;
-  color: var(--el-text-color-regular);
+  color: var(--el-text-color-regular) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 :deep(.el-select__placeholder) {
@@ -253,7 +256,14 @@ onMounted(() => {
 }
 
 :deep(.el-select__input) {
-  color: var(--el-text-color-regular);
+  color: var(--el-text-color-regular) !important;
+  visibility: visible !important;
+}
+
+:deep(.el-select__wrapper .el-select__selection .el-select__selected-item span) {
+  display: inline !important;
+  visibility: visible !important;
+  color: var(--el-text-color-regular) !important;
 }
 
 /* 返回按钮 */
