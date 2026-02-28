@@ -17,7 +17,8 @@
           </el-select>
         </el-form-item>
         <el-form-item label="审核状态">
-          <el-select v-model="filters.status" placeholder="待审核" clearable @change="loadData">
+          <el-select v-model="filters.status" placeholder="全部" clearable @change="loadData">
+            <el-option label="全部" value="" />
             <el-option label="待审核" :value="0" />
             <el-option label="已审核" :value="1" />
             <el-option label="已驳回" :value="2" />
@@ -238,7 +239,7 @@ const dateRange = ref<[string, string]>([])
 
 const filters = reactive({
   type: 'all',
-  status: 0 // 默认显示待审核
+  status: '' // 默认显示全部
 })
 
 const pagination = reactive({

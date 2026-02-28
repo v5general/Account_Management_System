@@ -7,7 +7,7 @@
 
       <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
         <el-form-item label="费用分类" prop="category_id">
-          <el-select v-model="category_id" placeholder="请选择费用分类" style="width: 100%">
+          <el-select v-model="category_id" placeholder="请选择费用分类" clearable filterable style="width: 100%">
             <el-option
               v-for="cat in categories"
               :key="cat.category_id"
@@ -18,7 +18,7 @@
         </el-form-item>
 
         <el-form-item label="关联项目" prop="project_id">
-          <el-select v-model="project_id" placeholder="请选择关联项目" clearable style="width: 100%">
+          <el-select v-model="project_id" placeholder="请选择关联项目" clearable filterable style="width: 100%">
             <el-option
               v-for="proj in projects"
               :key="proj.project_id"
@@ -267,45 +267,6 @@ onMounted(() => {
 
 :deep(.el-input-number) {
   width: 200px;
-}
-
-/* 修复 el-select 显示问题 */
-:deep(.el-select) {
-  width: 100%;
-}
-
-:deep(.el-select__wrapper) {
-  min-height: 32px;
-  width: 100%;
-}
-
-:deep(.el-select__selection) {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-height: 20px;
-}
-
-:deep(.el-select__selected-item) {
-  display: inline-flex !important;
-  color: var(--el-text-color-regular) !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-:deep(.el-select__placeholder) {
-  color: var(--el-text-color-placeholder);
-}
-
-:deep(.el-select__input) {
-  color: var(--el-text-color-regular) !important;
-  visibility: visible !important;
-}
-
-:deep(.el-select__wrapper .el-select__selection .el-select__selected-item span) {
-  display: inline !important;
-  visibility: visible !important;
-  color: var(--el-text-color-regular) !important;
 }
 
 /* 返回按钮 */
