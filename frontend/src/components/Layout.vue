@@ -21,6 +21,7 @@
           </template>
           <el-menu-item index="/transaction/income" v-if="userStore.isFinance()">收入登记</el-menu-item>
           <el-menu-item index="/transaction/expense" v-if="userStore.isFinance()">支出登记</el-menu-item>
+          <el-menu-item index="/transaction/audit" v-if="userStore.isAdmin()">收支审核</el-menu-item>
           <el-menu-item index="/transaction/list">收支列表</el-menu-item>
         </el-sub-menu>
         <el-menu-item index="/transaction/list" v-if="userStore.isEmployee()">

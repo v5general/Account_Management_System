@@ -102,6 +102,9 @@ func SetupRoutes(r *gin.Engine) {
 				transactions.PUT("/:id", controllers.UpdateTransaction)
 				transactions.DELETE("/:id", controllers.DeleteTransaction)
 				transactions.GET("/statistics", controllers.GetStatistics)
+				// 收支审核（仅管理员可用）
+				transactions.PUT("/:id/approve", middlewares.RequireAdmin(), controllers.ApproveTransaction)
+				transactions.PUT("/:id/reject", middlewares.RequireAdmin(), controllers.RejectTransaction)
 			}
 
 			// 收支查询（所有认证用户可访问）
