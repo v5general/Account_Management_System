@@ -100,6 +100,12 @@ const routes: RouteRecordRaw[] = [
             name: 'AccountManage',
             component: () => import('../views/settings/Account.vue'),
             meta: { title: '账号管理', roles: ['EMPLOYEE', 'FINANCE'] }
+          },
+          {
+            path: 'version',
+            name: 'VersionInfo',
+            component: () => import('../views/settings/Version.vue'),
+            meta: { title: '版本记录' }
           }
         ]
       }
