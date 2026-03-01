@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ userStore.isEmployee() ? '我的收支' : '收支记录' }}</span>
+          <span>{{ userStore.isEmployee() ? '我的收支' : '收支列表' }}</span>
           <div class="header-actions" v-if="!userStore.isEmployee()">
             <el-button type="primary" @click="$router.push('/transaction/income')" v-if="userStore.isFinance()">
               <el-icon><Plus /></el-icon>
