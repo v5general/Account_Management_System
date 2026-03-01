@@ -12,7 +12,7 @@ type User struct {
 	RealName     string      `gorm:"column:real_name;size:50;not null" json:"real_name"` // 真实姓名
 	Role         string      `gorm:"column:role;size:20;not null;default:EMPLOYEE" json:"role"` // ADMIN/EMPLOYEE/FINANCE
 	DepartmentID string      `gorm:"column:department_id;size:32" json:"department_id"` // 关联部门ID
-	Department   *Department `gorm:"foreignKey:DepartmentID" json:"-"`                      // 关联部门
+	Department   *Department `gorm:"foreignKey:DepartmentID;references:DepartmentID" json:"-"` // 关联部门
 	Status       int         `gorm:"column:status;default:1" json:"status"`                  // 1-正常，0-禁用
 	IsDeleted    int         `gorm:"column:is_deleted;default:0" json:"is_deleted"`        // 0-未删除，1-已删除
 	CreateTime   time.Time   `gorm:"column:create_time;autoCreateTime" json:"create_time"`

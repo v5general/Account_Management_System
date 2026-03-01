@@ -27,7 +27,7 @@ type UserInfo struct {
 	RealName       string `json:"real_name"`
 	Role           string `json:"role"`
 	DepartmentID   string `json:"department_id"`
-	DepartmentName string `json:"department_name,omitempty"` // 部门名称
+	DepartmentName string `json:"department_name"` // 部门名称
 	Status         int    `json:"status"`
 	CreateTime     string `json:"create_time"`
 }
