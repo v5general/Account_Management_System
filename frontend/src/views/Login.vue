@@ -72,7 +72,7 @@
           </el-form>
 
           <div class="footer-info">
-            <span>v1.0.0</span>
+            <span>v1.0.1</span>
           </div>
         </div>
       </div>
