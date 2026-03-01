@@ -50,6 +50,7 @@
             <el-menu-item index="/settings/project">项目管理</el-menu-item>
             <el-menu-item index="/settings/log">操作日志</el-menu-item>
           </template>
+          <el-menu-item index="/settings/version">版本记录</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
