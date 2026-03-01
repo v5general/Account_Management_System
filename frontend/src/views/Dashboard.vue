@@ -202,7 +202,7 @@
         </el-descriptions-item>
       </el-descriptions>
       <el-divider />
-      <el-table :data="recentTransactions" stripe max-height="400">
+      <el-table :data="allApprovedTransactions" stripe max-height="400">
         <el-table-column prop="transaction_time" label="交易时间" width="180">
           <template #default="{ row }">
             {{ formatDate(row.transaction_time) }}
@@ -258,6 +258,7 @@ const summary = ref({
 })
 
 const recentTransactions = ref<any[]>([])
+const allApprovedTransactions = ref<any[]>([])
 const chartRef = ref<HTMLElement>()
 
 // Dialog states
@@ -310,13 +311,14 @@ function showCountDetail() {
 
 async function loadSummary() {
   try {
-    // 获取最近的交易记录（用于显示最近收支）
-    const recentRes = await getTransactionList({ page: 1, page_size: 10 })
+    // 获取最近的交易记录（用于显示最近收支，只显示审核通过的记录）
+    const recentRes = await getTransactionList({ page: 1, page_size: 10, status: 1 })
     recentTransactions.value = recentRes.data.list || []
 
     // 获取所有审核通过的记录用于统计（使用较大的page_size获取所有数据）
     const statsRes = await getTransactionList({ page: 1, page_size: 10000, status: 1 })
     const list = statsRes.data.list || []
+    allApprovedTransactions.value = list
 
     // 计算汇总（只统计审核通过的记录）
     incomeTransactions.value = list.filter((t: any) => t.amount >= 0)
