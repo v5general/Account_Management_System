@@ -24,6 +24,7 @@ vendor/
 backend/uploads/
 backend/*.db
 backend/*.log
+backend/account-management
 
 # Frontend specific
 frontend/node_modules/
