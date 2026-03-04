@@ -16,6 +16,7 @@ type CreateTransactionRequest struct {
 	CategoryID       *string  `json:"category_id"`
 	ProjectID        *string  `json:"project_id"`
 	PersonID         *string  `json:"person_id"`
+	PaymentMethod    string   `json:"payment_method"`
 	TransactionTime  string   `json:"transaction_time" binding:"required"`
 	Remark           string   `json:"remark"`
 	AttachmentIDs    []string `json:"attachment_ids" binding:"required,min=1"`
@@ -27,6 +28,7 @@ type UpdateTransactionRequest struct {
 	CategoryID       *string  `json:"category_id"`
 	ProjectID        *string  `json:"project_id"`
 	PersonID         *string  `json:"person_id"`
+	PaymentMethod    string   `json:"payment_method"`
 	TransactionTime  string   `json:"transaction_time" binding:"required"`
 	Remark           string   `json:"remark"`
 	Status           int      `json:"status" binding:"omitempty,oneof=0 1 2"`
@@ -49,6 +51,7 @@ type TransactionInfo struct {
 	ProjectName     string           `json:"project_name,omitempty"` // 扁平化的项目名称，方便列表显示
 	Project         *ProjectSummary  `json:"project,omitempty"`
 	PersonID        *string          `json:"person_id"`
+	PaymentMethod   string           `json:"payment_method"`
 	TransactionTime string           `json:"transaction_time"`
 	Remark          string           `json:"remark"`
 	Status          int              `json:"status"`
@@ -124,6 +127,7 @@ func CreateTransaction(c *gin.Context) {
 		CategoryID:      req.CategoryID,
 		ProjectID:       req.ProjectID,
 		PersonID:        req.PersonID,
+		PaymentMethod:   req.PaymentMethod,
 		TransactionTime: transactionTime,
 		Remark:          req.Remark,
 		Status:          0, // 默认待审核
@@ -456,6 +460,7 @@ func UpdateTransaction(c *gin.Context) {
 		"category_id":      req.CategoryID,
 		"project_id":       req.ProjectID,
 		"person_id":        req.PersonID,
+		"payment_method":    req.PaymentMethod,
 		"transaction_time": transactionTime,
 		"remark":           req.Remark,
 	}
@@ -470,6 +475,97 @@ func UpdateTransaction(c *gin.Context) {
 	}
 
 	c.JSON(200, utils.SuccessResponse(nil))
+}
+
+// ResubmitTransaction 重新提交被驳回的记录（创建新记录并删除旧记录）
+func ResubmitTransaction(c *gin.Context) {
+	recordID := c.Param("id")
+	if recordID == "" {
+		c.JSON(200, utils.ErrorResponse(2001, "记录ID不能为空"))
+		return
+	}
+
+	var req UpdateTransactionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(200, utils.ErrorResponse(2001, "参数错误"))
+		return
+	}
+
+	// 验证记录是否存在
+	var oldTransaction models.Transaction
+	if err := database.DB.Where("record_id = ?", recordID).First(&oldTransaction).Error; err != nil {
+		c.JSON(200, utils.ErrorResponse(5000, "记录不存在"))
+		return
+	}
+
+	// 验证记录状态是否为已驳回
+	if oldTransaction.Status != 2 {
+		c.JSON(200, utils.ErrorResponse(2001, "只能重新提交已驳回的记录"))
+		return
+	}
+
+	// 验证支出记录必须有人员
+	if req.Amount < 0 && req.PersonID == nil {
+		c.JSON(200, utils.ErrorResponse(2001, "支出记录必须关联人员"))
+		return
+	}
+
+	// 解析交易时间
+	transactionTime, err := time.Parse("2006-01-02 15:04:05", req.TransactionTime)
+	if err != nil {
+		c.JSON(200, utils.ErrorResponse(2001, "交易时间格式错误"))
+		return
+	}
+
+	creatorID := c.GetString("user_id")
+
+	// 开始事务
+	tx := database.DB.Begin()
+
+	// 创建新记录
+	newRecordID := utils.GenerateID("record")
+	newTransaction := models.Transaction{
+		RecordID:        newRecordID,
+		Amount:          req.Amount,
+		CategoryID:      req.CategoryID,
+		ProjectID:       req.ProjectID,
+		PersonID:        req.PersonID,
+		PaymentMethod:   req.PaymentMethod,
+		TransactionTime: transactionTime,
+		Remark:          req.Remark,
+		Status:          0, // 新记录为待审核状态
+		CreatorID:       creatorID,
+	}
+
+	if err := tx.Create(&newTransaction).Error; err != nil {
+		tx.Rollback()
+		c.JSON(200, utils.ErrorResponse(5000, "创建新记录失败"))
+		return
+	}
+
+	// 复制附件到新记录
+	if err := tx.Model(&models.Attachment{}).Where("record_id = ?", recordID).Updates(map[string]interface{}{
+		"record_id": newRecordID,
+	}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(200, utils.ErrorResponse(5000, "复制附件失败"))
+		return
+	}
+
+	// 删除旧记录（软删除）
+	if err := tx.Model(&models.Transaction{}).Where("record_id = ?", recordID).Update("is_deleted", 1).Error; err != nil {
+		tx.Rollback()
+		c.JSON(200, utils.ErrorResponse(5000, "删除旧记录失败"))
+		return
+	}
+
+	tx.Commit()
+
+	c.JSON(200, utils.SuccessResponse(gin.H{
+		"new_record_id": newRecordID,
+		"old_record_id": recordID,
+		"message": "重新提交成功，旧记录已删除",
+	}))
 }
 
 // DeleteTransaction 删除收支记录（软删除）

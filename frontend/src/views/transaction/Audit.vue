@@ -47,7 +47,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="金额" width="140">
+        <el-table-column label="金额" width="150">
           <template #default="{ row }">
             <span :class="row.amount > 0 ? 'income-amount' : 'expense-amount'">
               {{ row.amount > 0 ? '+' : '' }}{{ formatAmount(row.amount) }}
@@ -55,7 +55,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="category.name" label="费用分类" width="120" />
-        <el-table-column label="项目" width="150">
+        <el-table-column prop="payment_method" label="支付方式" width="120">
+          <template #default="{ row }">
+            {{ row.payment_method || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="项目" width="180">
           <template #default="{ row }">
             <span v-if="row.project?.name || row.project_name">
               {{ row.amount >= 0 ? '来源项目：' : '关联项目：' }}
@@ -73,7 +78,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="remark" label="备注" width="200" show-overflow-tooltip />
         <el-table-column label="附件" width="100">
           <template #default="{ row }">
             <el-tag v-if="row.attachments && row.attachments.length > 0">
@@ -231,6 +236,7 @@ import { getTransactionList, approveTransaction, rejectTransaction } from '@/api
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import dayjs from 'dayjs'
 import request from '@/utils/request'
+import { formatAmount as formatAmountUtil, formatFileSize as formatFileSizeUtil } from '@/utils/format'
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -280,15 +286,12 @@ function isImage(filename: string): boolean {
 // 格式化文件大小
 function formatFileSize(bytes: number | undefined): string {
   if (!bytes || bytes === 0) return '未知大小'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i]
+  return formatFileSizeUtil(bytes)
 }
 
 // 格式化金额（千分位分隔符）
 function formatAmount(amount: number): string {
-  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return formatAmountUtil(amount)
 }
 
 // 预览附件

@@ -111,6 +111,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { getStatistics } from '@/api/statistics'
 import type { StatisticsResponse, StatisticsParams } from '@/api/statistics'
 import { ElMessage } from 'element-plus'
+import { formatAmount as formatAmountUtil } from '@/utils/format'
 
 const loading = ref(false)
 const dateRange = ref<string[]>()
@@ -143,7 +144,7 @@ const dimensionLabel = computed(() => {
 })
 
 function formatAmount(amount: number) {
-  return amount.toFixed(2)
+  return formatAmountUtil(amount)
 }
 
 async function handleQuery() {

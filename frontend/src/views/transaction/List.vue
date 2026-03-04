@@ -75,7 +75,7 @@
             {{ formatDate(row.transaction_time) }}
           </template>
         </el-table-column>
-        <el-table-column label="项目" width="180">
+        <el-table-column label="项目" width="200">
           <template #default="{ row }">
             <span v-if="row.project_name || row.project?.name">
               {{ row.amount >= 0 ? '来源项目：' : '关联项目：' }}
@@ -98,12 +98,20 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column prop="payment_method" label="支付方式" width="120">
+          <template #default="{ row }">
+            {{ row.payment_method || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="remark" label="备注" width="200" show-overflow-tooltip />
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row)">查看</el-button>
             <el-button link type="primary" @click="handleViewAttachments(row)" v-if="row.attachments?.length">
               凭证({{ row.attachments.length }})
+            </el-button>
+            <el-button link type="warning" @click="handleResubmit(row)" v-if="row.status === 2">
+              重新提交
             </el-button>
           </template>
         </el-table-column>
@@ -255,13 +263,17 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getTransactionList, getTransactionDetail } from '@/api/transaction'
+import { useRouter } from 'vue-router'
+import { getTransactionList, getTransactionDetail, resubmitTransaction } from '@/api/transaction'
 import { getCategoryList } from '@/api/category'
 import { getProjectList } from '@/api/project'
 import { getAttachmentUrl } from '@/api/attachment'
 import { useUserStore } from '@/store/user'
 import { ElMessage } from 'element-plus'
 import type { Transaction, Attachment } from '@/api/transaction'
+import { formatAmount as formatAmountUtil, formatDateTime as formatDateTimeUtil, formatDate as formatDateUtil, formatFileSize as formatFileSizeUtil } from '@/utils/format'
+
+const router = useRouter()
 
 const userStore = useUserStore()
 
@@ -300,27 +312,24 @@ function isImage(filename: string): boolean {
 // 格式化日期（只显示到日）
 function formatDate(dateStr: string): string {
   if (!dateStr) return '-'
-  return dateStr.split(' ')[0]
+  return formatDateUtil(dateStr)
 }
 
 // 格式化日期时间（显示到秒）
 function formatDateTime(dateStr: string): string {
   if (!dateStr) return '-'
-  return dateStr
+  return formatDateTimeUtil(dateStr)
 }
 
 // 格式化文件大小
 function formatFileSize(bytes: number | undefined): string {
   if (!bytes || bytes === 0) return '未知大小'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i]
+  return formatFileSizeUtil(bytes)
 }
 
 // 格式化金额（千分位分隔符）
 function formatAmount(amount: number): string {
-  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return formatAmountUtil(amount)
 }
 
 // 获取审核状态类型
@@ -498,6 +507,39 @@ function handleViewAttachments(row: Transaction) {
   previewImage.value = ''
   previewImages.value = []
   attachmentDialogVisible.value = true
+}
+
+async function handleResubmit(row: Transaction) {
+  try {
+    // 获取详细信息
+    const res = await getTransactionDetail(row.record_id)
+    const transaction = res.data
+
+    // 将交易数据存储到sessionStorage，供登记页面使用
+    const resubmitData = {
+      record_id: transaction.record_id,
+      category_id: transaction.category_id,
+      project_id: transaction.project_id,
+      person_id: transaction.person_id,
+      payment_method: transaction.payment_method,
+      amount: Math.abs(transaction.amount),
+      transaction_time: transaction.transaction_time,
+      remark: transaction.remark
+    }
+    sessionStorage.setItem('resubmitTransaction', JSON.stringify(resubmitData))
+
+    // 根据金额正负判断跳转到收入还是支出登记页面
+    if (transaction.amount >= 0) {
+      router.push('/transaction/income')
+      ElMessage.success('已加载被驳回的数据，请修改后重新提交')
+    } else {
+      router.push('/transaction/expense')
+      ElMessage.success('已加载被驳回的数据，请修改后重新提交')
+    }
+  } catch (error) {
+    console.error('重新提交失败:', error)
+    ElMessage.error('重新提交失败')
+  }
 }
 
 async function handleDownloadAttachment(att: Attachment) {
