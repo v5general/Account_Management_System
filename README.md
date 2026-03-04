@@ -1,6 +1,6 @@
 # 账务管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.0.1-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-v1.0.2-blue.svg)](https://github.com)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE)
 
 轻量化、易操作、权限清晰的BS架构账务管理系统，实现收支流水的规范化记录、凭证的统一管理及多维度数据统计分析。
@@ -184,6 +184,13 @@ npx vite build
 | admin | admin123 | 管理员 |
 
 ## 版本历史
+
+### v1.0.2 (2026-03-05)
+- 新增支付方式字段，支持多种支付方式选择
+- 实现被驳回记录的重新提交功能
+- 优化金额显示，采用千位分隔符格式
+- 统一使用格式化工具函数
+- 优化表格列宽显示效果
 
 ### v1.0.1 (2026-03-01)
 - 优化登录界面设计，采用左右分栏布局
