@@ -68,10 +68,10 @@
           <el-table :data="recentTransactions" stripe @row-click="showTransactionDetail" style="cursor: pointer">
             <el-table-column prop="transaction_time" label="时间" width="180" />
             <el-table-column prop="project_name" label="项目" />
-            <el-table-column prop="amount" label="金额" width="120">
+            <el-table-column prop="amount" label="金额" width="150">
               <template #default="{ row }">
                 <span :class="row.amount > 0 ? 'income' : 'expense'">
-                  {{ row.amount > 0 ? '+' : '' }}{{ row.amount }}
+                  {{ row.amount > 0 ? '+' : '' }}{{ formatAmount(row.amount) }}
                 </span>
               </template>
             </el-table-column>
@@ -128,9 +128,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="project_name" label="项目" />
-        <el-table-column prop="amount" label="金额" width="120">
+        <el-table-column prop="amount" label="金额" width="150">
           <template #default="{ row }">
-            <span class="income">+{{ row.amount }}</span>
+            <span class="income">+{{ formatAmount(row.amount) }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -157,9 +157,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="project_name" label="项目" />
-        <el-table-column prop="amount" label="金额" width="120">
+        <el-table-column prop="amount" label="金额" width="150">
           <template #default="{ row }">
-            <span class="expense">{{ row.amount }}</span>
+            <span class="expense">{{ formatAmount(row.amount) }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -209,10 +209,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="project_name" label="项目" />
-        <el-table-column prop="amount" label="金额" width="120">
+        <el-table-column prop="amount" label="金额" width="150">
           <template #default="{ row }">
             <span :class="row.amount > 0 ? 'income' : 'expense'">
-              {{ row.amount > 0 ? '+' : '' }}{{ row.amount }}
+              {{ row.amount > 0 ? '+' : '' }}{{ formatAmount(row.amount) }}
             </span>
           </template>
         </el-table-column>
@@ -247,6 +247,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getTransactionList } from '@/api/transaction'
 import * as echarts from 'echarts'
+import { formatAmount as formatAmountUtil, formatDate as formatDateUtil, formatDateTime as formatDateTimeUtil } from '@/utils/format'
 
 const router = useRouter()
 
@@ -276,17 +277,17 @@ const incomeTransactions = ref<any[]>([])
 const expenseTransactions = ref<any[]>([])
 
 function formatAmount(amount: number) {
-  return amount.toFixed(2)
+  return formatAmountUtil(amount)
 }
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-'
-  return dateStr.split(' ')[0]
+  return formatDateUtil(dateStr)
 }
 
 function formatDateTime(dateStr: string) {
   if (!dateStr) return '-'
-  return dateStr
+  return formatDateTimeUtil(dateStr)
 }
 
 function navigateTo(path: string) {

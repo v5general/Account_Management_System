@@ -101,6 +101,7 @@ func SetupRoutes(r *gin.Engine) {
 				transactions.POST("", controllers.CreateTransaction)
 				transactions.PUT("/:id", controllers.UpdateTransaction)
 				transactions.DELETE("/:id", controllers.DeleteTransaction)
+				transactions.PUT("/:id/resubmit", controllers.ResubmitTransaction)
 				transactions.GET("/statistics", controllers.GetStatistics)
 				// 收支审核（仅管理员可用）
 				transactions.PUT("/:id/approve", middlewares.RequireAdmin(), controllers.ApproveTransaction)

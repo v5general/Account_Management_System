@@ -7,6 +7,7 @@ export interface Transaction {
   project_id?: string
   project_name?: string
   person_id?: string
+  payment_method?: string
   transaction_time: string
   remark: string
   status: number
@@ -50,9 +51,20 @@ export interface CreateTransactionParams {
   category_id?: string
   project_id?: string
   person_id?: string
+  payment_method?: string
   transaction_time: string
   remark?: string
   attachment_ids: string[]
+}
+
+export interface ResubmitTransactionParams {
+  amount: number
+  category_id?: string
+  project_id?: string
+  person_id?: string
+  payment_method?: string
+  transaction_time: string
+  remark?: string
 }
 
 export interface TransactionListParams {
@@ -99,4 +111,9 @@ export function approveTransaction(id: string, remark?: string) {
 // 驳回
 export function rejectTransaction(id: string, reason: string) {
   return request.put(`/transactions/${id}/reject`, { reason })
+}
+
+// 重新提交被驳回的记录
+export function resubmitTransaction(id: string, data: ResubmitTransactionParams) {
+  return request.put(`/transactions/${id}/resubmit`, data)
 }

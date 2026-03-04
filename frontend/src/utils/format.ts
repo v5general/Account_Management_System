@@ -15,10 +15,15 @@ export function formatDate(date: string | Date): string {
 }
 
 /**
- * 格式化金额
+ * 格式化金额（财务格式，带千位分隔符）
+ * 例如：51443.02 -> 51,443.02
  */
 export function formatAmount(amount: number): string {
-  return amount.toFixed(2)
+  // 使用 toLocaleString 实现千位分隔符，并保留两位小数
+  return amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 }
 
 /**

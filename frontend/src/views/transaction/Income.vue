@@ -85,7 +85,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createTransaction } from '@/api/transaction'
+import { createTransaction, resubmitTransaction } from '@/api/transaction'
 import { getCategoryList } from '@/api/category'
 import { getProjectList } from '@/api/project'
 import type { FormInstance, FormRules, UploadUserFile, UploadProps } from 'element-plus'
@@ -94,6 +94,7 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const resubmitRecordId = ref<string>('')
 
 const categories = ref([])
 const projects = ref([])
@@ -191,16 +192,36 @@ async function handleSubmit() {
 
     loading.value = true
     try {
-      const data = {
-        ...form.value,
-        amount: Math.abs(amount.value),
-        transaction_time: (transaction_time.value as Date).toISOString().slice(0, 10) + ' 00:00:00'
+      const transactionTime = (transaction_time.value as Date).toISOString().slice(0, 10) + ' 00:00:00'
+
+      // 判断是否是重新提交
+      if (resubmitRecordId.value) {
+        // 重新提交被驳回的记录
+        const data = {
+          project_id: project_id.value,
+          category_id: category_id.value,
+          amount: Math.abs(amount.value),
+          payment_method: '',
+          transaction_time: transactionTime,
+          remark: remark.value
+        }
+        await resubmitTransaction(resubmitRecordId.value, data)
+        ElMessage.success('重新提交成功')
+        sessionStorage.removeItem('resubmitTransaction')
+        resubmitRecordId.value = ''
+      } else {
+        // 创建新记录
+        const data = {
+          ...form.value,
+          amount: Math.abs(amount.value),
+          transaction_time: transactionTime
+        }
+        await createTransaction(data)
+        ElMessage.success('登记成功')
       }
-      await createTransaction(data)
-      ElMessage.success('登记成功')
       router.push('/transaction/list')
     } catch (error) {
-      console.error('Failed to create transaction:', error)
+      console.error('Failed to submit transaction:', error)
     } finally {
       loading.value = false
     }
@@ -216,11 +237,34 @@ function handleReset() {
   amount.value = 0
   transaction_time.value = new Date()
   remark.value = ''
+  resubmitRecordId.value = ''
+  sessionStorage.removeItem('resubmitTransaction')
 }
 
 onMounted(() => {
   loadCategories()
   loadProjects()
+
+  // 检查是否有重新提交的数据
+  const resubmitDataStr = sessionStorage.getItem('resubmitTransaction')
+  if (resubmitDataStr) {
+    try {
+      const resubmitData = JSON.parse(resubmitDataStr)
+      // 填充表单数据
+      resubmitRecordId.value = resubmitData.record_id || ''
+      project_id.value = resubmitData.project_id || ''
+      category_id.value = resubmitData.category_id || ''
+      amount.value = resubmitData.amount || 0
+      if (resubmitData.transaction_time) {
+        transaction_time.value = new Date(resubmitData.transaction_time)
+      }
+      remark.value = resubmitData.remark || ''
+
+      ElMessage.info('已加载被驳回的数据，请修改后重新提交')
+    } catch (error) {
+      console.error('Failed to parse resubmit data:', error)
+    }
+  }
 })
 </script>
 

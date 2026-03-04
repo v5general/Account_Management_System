@@ -44,6 +44,17 @@
           <span class="unit">元</span>
         </el-form-item>
 
+        <el-form-item label="支付方式" prop="payment_method">
+          <el-select v-model="payment_method" placeholder="请选择支付方式" clearable filterable allow-create style="width: 100%">
+            <el-option
+              v-for="method in paymentMethods"
+              :key="method"
+              :label="method"
+              :value="method"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="交易时间" prop="transaction_time">
           <el-date-picker
             v-model="transaction_time"
@@ -96,7 +107,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createTransaction } from '@/api/transaction'
+import { createTransaction, resubmitTransaction } from '@/api/transaction'
 import { getCategoryList } from '@/api/category'
 import { getProjectList } from '@/api/project'
 import { getUserList } from '@/api/user'
@@ -107,12 +118,24 @@ import { Back, Upload } from '@element-plus/icons-vue'
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const resubmitRecordId = ref<string>('')
 
 const categories = ref([])
 const projects = ref([])
 const users = ref([])
 const fileList = ref<UploadUserFile[]>([])
 const attachmentIds = ref<string[]>([])
+
+// 预定义的支付方式
+const paymentMethods = ref([
+  '现金',
+  '公司转账',
+  '微信',
+  '支付宝',
+  '银行转账',
+  '支票',
+  '其他'
+])
 
 const uploadAction = '/api/v1/attachments'
 const uploadHeaders = {
@@ -123,6 +146,7 @@ const uploadHeaders = {
 const project_id = ref('')
 const category_id = ref('')
 const person_id = ref('')
+const payment_method = ref('')
 const amount = ref(0)
 const transaction_time = ref(new Date())
 const remark = ref('')
@@ -133,6 +157,7 @@ const form = computed(() => ({
   project_id: project_id.value,
   category_id: category_id.value,
   person_id: person_id.value,
+  payment_method: payment_method.value,
   amount: amount.value,
   transaction_time: transaction_time.value,
   remark: remark.value,
@@ -220,16 +245,35 @@ async function handleSubmit() {
       const date = transaction_time.value as Date
       const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} 00:00:00`
 
-      const data = {
-        ...form.value,
-        amount: -Math.abs(amount.value), // 支出为负数
-        transaction_time: formattedDate
+      // 判断是否是重新提交
+      if (resubmitRecordId.value) {
+        // 重新提交被驳回的记录
+        const data = {
+          project_id: project_id.value,
+          category_id: category_id.value,
+          person_id: person_id.value,
+          payment_method: payment_method.value,
+          amount: -Math.abs(amount.value),
+          transaction_time: formattedDate,
+          remark: remark.value
+        }
+        await resubmitTransaction(resubmitRecordId.value, data)
+        ElMessage.success('重新提交成功')
+        sessionStorage.removeItem('resubmitTransaction')
+        resubmitRecordId.value = ''
+      } else {
+        // 创建新记录
+        const data = {
+          ...form.value,
+          amount: -Math.abs(amount.value), // 支出为负数
+          transaction_time: formattedDate
+        }
+        await createTransaction(data)
+        ElMessage.success('登记成功')
       }
-      await createTransaction(data)
-      ElMessage.success('登记成功')
       router.push('/transaction/list')
     } catch (error) {
-      console.error('Failed to create transaction:', error)
+      console.error('Failed to submit transaction:', error)
     } finally {
       loading.value = false
     }
@@ -243,15 +287,41 @@ function handleReset() {
   project_id.value = ''
   category_id.value = ''
   person_id.value = ''
+  payment_method.value = ''
   amount.value = 0
   transaction_time.value = new Date()
   remark.value = ''
+  resubmitRecordId.value = ''
+  sessionStorage.removeItem('resubmitTransaction')
 }
 
 onMounted(() => {
   loadCategories()
   loadProjects()
   loadUsers()
+
+  // 检查是否有重新提交的数据
+  const resubmitDataStr = sessionStorage.getItem('resubmitTransaction')
+  if (resubmitDataStr) {
+    try {
+      const resubmitData = JSON.parse(resubmitDataStr)
+      // 填充表单数据
+      resubmitRecordId.value = resubmitData.record_id || ''
+      project_id.value = resubmitData.project_id || ''
+      category_id.value = resubmitData.category_id || ''
+      person_id.value = resubmitData.person_id || ''
+      payment_method.value = resubmitData.payment_method || ''
+      amount.value = resubmitData.amount || 0
+      if (resubmitData.transaction_time) {
+        transaction_time.value = new Date(resubmitData.transaction_time)
+      }
+      remark.value = resubmitData.remark || ''
+
+      ElMessage.info('已加载被驳回的数据，请修改后重新提交')
+    } catch (error) {
+      console.error('Failed to parse resubmit data:', error)
+    }
+  }
 })
 </script>
 
