@@ -20,31 +20,48 @@
             </div>
             <div class="version-desc">{{ version.description }}</div>
 
-            <div class="version-details" v-if="version.features.length || version.fixes.length">
-              <div class="detail-section" v-if="version.features.length">
-                <div class="section-title">
-                  <el-icon><Setting /></el-icon>
-                  <span>功能优化</span>
-                </div>
-                <ul class="feature-list">
-                  <li v-for="(feature, idx) in version.features" :key="'f' + idx">
-                    {{ feature }}
-                  </li>
-                </ul>
-              </div>
+            <!-- 下拉式详情 -->
+            <el-collapse v-if="version.features.length || version.fixes.length" class="version-collapse">
+              <el-collapse-item>
+                <template #title>
+                  <div class="collapse-title">
+                    <el-icon><Document /></el-icon>
+                    <span>查看更新详情</span>
+                    <el-tag size="small" type="info">
+                      {{ version.features.length + version.fixes.length }}项
+                    </el-tag>
+                  </div>
+                </template>
 
-              <div class="detail-section" v-if="version.fixes.length">
-                <div class="section-title fixes">
-                  <el-icon><CircleCheck /></el-icon>
-                  <span>问题修复</span>
+                <div class="version-details">
+                  <div class="detail-section" v-if="version.features.length">
+                    <div class="section-title">
+                      <el-icon><Setting /></el-icon>
+                      <span>功能优化</span>
+                      <el-tag size="small" type="success">{{ version.features.length }}</el-tag>
+                    </div>
+                    <ul class="feature-list">
+                      <li v-for="(feature, idx) in version.features" :key="'f' + idx">
+                        {{ feature }}
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="detail-section" v-if="version.fixes.length">
+                    <div class="section-title fixes">
+                      <el-icon><CircleCheck /></el-icon>
+                      <span>问题修复</span>
+                      <el-tag size="small" type="warning">{{ version.fixes.length }}</el-tag>
+                    </div>
+                    <ul class="feature-list">
+                      <li v-for="(fix, idx) in version.fixes" :key="'x' + idx">
+                        {{ fix }}
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-                <ul class="feature-list">
-                  <li v-for="(fix, idx) in version.fixes" :key="'x' + idx">
-                    {{ fix }}
-                  </li>
-                </ul>
-              </div>
-            </div>
+              </el-collapse-item>
+            </el-collapse>
           </div>
         </div>
       </div>
@@ -54,6 +71,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Document } from '@element-plus/icons-vue'
 
 interface VersionInfo {
   version: string
@@ -65,6 +83,20 @@ interface VersionInfo {
 }
 
 const versions = ref<VersionInfo[]>([
+  {
+    version: 'v1.0.2',
+    date: '2026-03-05',
+    status: 'stable',
+    description: '功能增强与显示优化版本',
+    features: [
+      '支付方式 - 新增支付方式字段，支持现金、微信、支付宝、银行转账等多种支付方式',
+      '重新提交 - 实现被驳回记录的重新提交功能，提升审核流程效率',
+      '金额显示 - 优化金额格式化，采用千位分隔符显示（如：51,443.02）',
+      '格式化工具 - 统一使用格式化工具函数，提升代码一致性',
+      '表格优化 - 调整表格列宽，优化信息展示效果'
+    ],
+    fixes: []
+  },
   {
     version: 'v1.0.1',
     date: '2026-03-01',
@@ -181,12 +213,57 @@ const versions = ref<VersionInfo[]>([
 .version-desc {
   color: #606266;
   font-size: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+/* 折叠面板样式 */
+.version-collapse {
+  margin-top: 12px;
+  border: none;
+}
+
+.version-collapse :deep(.el-collapse-item__header) {
+  background-color: #f0f2f5;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  padding: 0 16px;
+  height: 40px;
+  line-height: 40px;
+  font-size: 14px;
+  color: #606266;
+  transition: all 0.3s;
+}
+
+.version-collapse :deep(.el-collapse-item__header:hover) {
+  background-color: #e8eaed;
+  color: #409eff;
+}
+
+.version-collapse :deep(.el-collapse-item__wrap) {
+  border: none;
+  background-color: transparent;
+}
+
+.version-collapse :deep(.el-collapse-item__content) {
+  padding-top: 16px;
+}
+
+.collapse-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.collapse-title .el-icon {
+  font-size: 16px;
 }
 
 .version-details {
-  border-top: 1px solid #ebeef5;
-  padding-top: 16px;
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 16px;
+  border: 1px solid #ebeef5;
 }
 
 .detail-section {
@@ -200,7 +277,7 @@ const versions = ref<VersionInfo[]>([
 .section-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #409eff;
   font-size: 14px;
   font-weight: 500;
