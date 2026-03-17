@@ -41,28 +41,74 @@
 account-management-system/
 ├── backend/                    # 后端代码
 │   ├── main.go                 # 应用入口
+│   ├── go.mod                  # Go 模块定义
 │   ├── config/                 # 配置文件
-│   ├── database/               # 数据库配置
+│   │   ├── config.go           # 配置结构体
+│   │   └── config.yaml         # YAML 配置文件
+│   ├── cmd/                    # 命令行工具
+│   │   └── recreate_db/        # 数据库重建工具
+│   ├── database/               # 数据库连接
 │   ├── models/                 # 数据模型
+│   │   ├── user.go             # 用户模型
+│   │   ├── transaction.go      # 交易记录模型
+│   │   ├── category.go         # 分类模型
+│   │   ├── project.go          # 项目模型
+│   │   ├── department.go       # 部门模型
+│   │   ├── operation_log.go    # 操作日志模型
+│   │   └── attachment.go       # 附件模型
 │   ├── controllers/            # 控制器
+│   │   ├── auth.go             # 认证控制器
+│   │   ├── user.go             # 用户控制器
+│   │   ├── transaction.go      # 交易控制器
+│   │   ├── category.go         # 分类控制器
+│   │   ├── project.go          # 项目控制器
+│   │   ├── department.go       # 部门控制器
+│   │   ├── statistics.go       # 统计控制器
+│   │   ├── log.go              # 日志控制器
+│   │   └── attachment.go       # 附件控制器
 │   ├── middlewares/            # 中间件
+│   │   ├── auth.go             # JWT 认证中间件
+│   │   ├── cors.go             # 跨域中间件
+│   │   └── logger.go           # 日志中间件
 │   ├── routes/                 # 路由配置
-│   └── utils/                  # 工具函数
+│   ├── utils/                  # 工具函数
+│   │   ├── common.go           # 通用工具
+│   │   ├── crypto.go           # 加密工具
+│   │   ├── jwt.go              # JWT 工具
+│   │   └── oss.go              # OSS 存储工具
+│   ├── sql/                    # SQL 脚本
+│   │   ├── 01_create_database.sql
+│   │   ├── 02_create_tables.sql
+│   │   ├── 03_init_data.sql
+│   │   ├── 04_fix_department_unique_index.sql
+│   │   └── 05_add_payment_method.sql
+│   └── uploads/                # 文件上传目录
 ├── frontend/                   # 前端代码
 │   ├── src/
+│   │   ├── main.ts             # 程序入口
+│   │   ├── App.vue             # 根组件
 │   │   ├── api/                # API 封装
 │   │   ├── router/             # 路由配置
 │   │   ├── store/              # 状态管理
 │   │   ├── components/         # 公共组件
+│   │   ├── utils/              # 工具函数
+│   │   │   ├── request.ts      # HTTP 请求封装
+│   │   │   └── format.ts       # 格式化工具
 │   │   └── views/              # 页面组件
-│   │       ├── dashboard/      # 首页仪表盘
+│   │       ├── Dashboard.vue   # 首页仪表盘
+│   │       ├── Login.vue       # 登录页
 │   │       ├── transaction/    # 收支管理
 │   │       ├── category/       # 费用分类
 │   │       ├── statistics/     # 统计报表
 │   │       └── settings/       # 系统设置
 │   └── dist/                   # 构建输出
-├── database/                   # 数据库脚本
-└── docs/                       # 项目文档
+├── docs/                       # 项目文档
+│   ├── 需求规格说明书.md
+│   ├── 接口文档.md
+│   ├── 使用手册.md
+│   ├── 部署文档.md
+│   └── 重新提交功能说明.md
+└── README.md                   # 项目说明
 ```
 
 ## 功能模块
@@ -111,8 +157,12 @@ account-management-system/
 
 ### 数据库初始化
 ```bash
-mysql -u root -p < database/schema.sql
-mysql -u root -p < database/init_data.sql
+# 创建数据库
+mysql -u root -p < backend/sql/01_create_database.sql
+# 创建表结构
+mysql -u root -p < backend/sql/02_create_tables.sql
+# 初始化基础数据
+mysql -u root -p < backend/sql/03_init_data.sql
 ```
 
 ### 安装依赖
@@ -207,6 +257,7 @@ npx vite build
 - [接口文档](./docs/接口文档.md)
 - [部署文档](./docs/部署文档.md)
 - [使用手册](./docs/使用手册.md)
+- [重新提交功能说明](./docs/重新提交功能说明.md)
 
 ## 许可证
 
