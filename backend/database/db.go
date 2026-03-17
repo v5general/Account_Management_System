@@ -69,6 +69,7 @@ func AutoMigrate() error {
 		&models.Transaction{},
 		&models.Attachment{},
 		&models.OperationLog{},
+		&models.PaymentMethod{},
 	)
 }
 
@@ -134,6 +135,25 @@ func InitData() error {
 		}
 		if err := DB.Create(&categories).Error; err != nil {
 			return fmt.Errorf("创建分类失败: %w", err)
+		}
+	}
+
+	// 检查是否已有支付方式
+	var pmCount int64
+	DB.Model(&models.PaymentMethod{}).Where("is_deleted = ?", 0).Count(&pmCount)
+	if pmCount == 0 {
+		// 创建预设支付方式
+		paymentMethods := []models.PaymentMethod{
+			{PaymentMethodID: "pm_001", Name: "现金", SortOrder: 1},
+			{PaymentMethodID: "pm_002", Name: "公司转账", SortOrder: 2},
+			{PaymentMethodID: "pm_003", Name: "微信", SortOrder: 3},
+			{PaymentMethodID: "pm_004", Name: "支付宝", SortOrder: 4},
+			{PaymentMethodID: "pm_005", Name: "银行转账", SortOrder: 5},
+			{PaymentMethodID: "pm_006", Name: "支票", SortOrder: 6},
+			{PaymentMethodID: "pm_007", Name: "其他", SortOrder: 99},
+		}
+		if err := DB.Create(&paymentMethods).Error; err != nil {
+			return fmt.Errorf("创建支付方式失败: %w", err)
 		}
 	}
 

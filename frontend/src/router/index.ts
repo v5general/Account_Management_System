@@ -90,6 +90,12 @@ const routes: RouteRecordRaw[] = [
             meta: { title: '项目管理', roles: ['ADMIN'] }
           },
           {
+            path: 'payment-method',
+            name: 'PaymentMethodManage',
+            component: () => import('../views/settings/PaymentMethod.vue'),
+            meta: { title: '支付方式', roles: ['ADMIN', 'FINANCE'] }
+          },
+          {
             path: 'log',
             name: 'OperationLog',
             component: () => import('../views/settings/Log.vue'),
@@ -157,7 +163,8 @@ router.beforeEach(async (to, from, next) => {
 
   // 系统设置页面特殊处理
   if (to.path.startsWith('/settings')) {
-    if (userStore.isEmployee() && to.path !== '/settings/account') {
+    // 员工只能访问账号管理和版本记录
+    if (userStore.isEmployee() && to.path !== '/settings/account' && to.path !== '/settings/version') {
       next('/settings/account')
       return
     }

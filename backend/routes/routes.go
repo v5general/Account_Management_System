@@ -93,6 +93,17 @@ func SetupRoutes(r *gin.Engine) {
 				categories.DELETE("/:id", middlewares.RequireFinance(), controllers.DeleteCategory)
 			}
 
+			// 支付方式管理
+			paymentMethods := authorized.Group("/payment-methods")
+			{
+				paymentMethods.GET("", controllers.ListPaymentMethods)
+				// 创建支付方式允许所有登录用户（方便在支出登记时添加）
+				paymentMethods.POST("", controllers.CreatePaymentMethod)
+				// 更新、删除需要财务权限
+				paymentMethods.PUT("/:id", middlewares.RequireFinance(), controllers.UpdatePaymentMethod)
+				paymentMethods.DELETE("/:id", middlewares.RequireFinance(), controllers.DeletePaymentMethod)
+			}
+
 			// 收支管理
 			transactions := authorized.Group("/transactions")
 			{
