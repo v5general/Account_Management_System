@@ -11,7 +11,7 @@ type Transaction struct {
 	CategoryID       *string        `gorm:"column:category_id;size:32" json:"category_id"`
 	ProjectID        *string        `gorm:"column:project_id;size:32" json:"project_id"` // 关联项目ID
 	PersonID         *string        `gorm:"column:person_id;size:32" json:"person_id"`
-	PaymentMethod    string         `gorm:"column:payment_method;size:50" json:"payment_method"` // 支付方式
+	PaymentMethodID  *string        `gorm:"column:payment_method_id;size:32" json:"payment_method_id"` // 支付方式ID
 	TransactionTime  time.Time      `gorm:"column:transaction_time;not null" json:"transaction_time"`
 	Remark           string         `gorm:"column:remark;size:500" json:"remark"`
 	Status           int            `gorm:"column:status;default:0" json:"status"` // 0-待审核，1-已审核，2-已驳回
@@ -21,11 +21,12 @@ type Transaction struct {
 	UpdateTime       time.Time      `gorm:"column:update_time;autoUpdateTime" json:"update_time"`
 
 	// 关联
-	Category   *Category    `gorm:"foreignKey:CategoryID;References:CategoryID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"category,omitempty"`
-	Project    *Project     `gorm:"foreignKey:ProjectID;References:ProjectID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"project,omitempty"`
-	Person     *User        `gorm:"foreignKey:PersonID;References:UserID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"person,omitempty"`
-	Creator    *User        `gorm:"foreignKey:CreatorID;References:UserID" json:"creator,omitempty"`
-	Attachments []Attachment `gorm:"foreignKey:RecordID;References:RecordID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"attachments,omitempty"`
+	Category      *Category      `gorm:"foreignKey:CategoryID;References:CategoryID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"category,omitempty"`
+	Project       *Project       `gorm:"foreignKey:ProjectID;References:ProjectID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"project,omitempty"`
+	Person        *User          `gorm:"foreignKey:PersonID;References:UserID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"person,omitempty"`
+	PaymentMethod *PaymentMethod `gorm:"foreignKey:PaymentMethodID;References:PaymentMethodID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"payment_method,omitempty"`
+	Creator       *User          `gorm:"foreignKey:CreatorID;References:UserID" json:"creator,omitempty"`
+	Attachments   []Attachment   `gorm:"foreignKey:RecordID;References:RecordID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"attachments,omitempty"`
 }
 
 // TableName 指定表名

@@ -7,7 +7,11 @@ export interface Transaction {
   project_id?: string
   project_name?: string
   person_id?: string
-  payment_method?: string
+  payment_method_id?: string
+  payment_method?: {
+    payment_method_id: string
+    name: string
+  }
   transaction_time: string
   remark: string
   status: number
@@ -51,7 +55,7 @@ export interface CreateTransactionParams {
   category_id?: string
   project_id?: string
   person_id?: string
-  payment_method?: string
+  payment_method_id?: string | null
   transaction_time: string
   remark?: string
   attachment_ids: string[]
@@ -62,7 +66,7 @@ export interface ResubmitTransactionParams {
   category_id?: string
   project_id?: string
   person_id?: string
-  payment_method?: string
+  payment_method_id?: string | null
   transaction_time: string
   remark?: string
 }

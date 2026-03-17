@@ -12,26 +12,26 @@ import (
 
 // CreateTransactionRequest 创建收支记录请求
 type CreateTransactionRequest struct {
-	Amount           float64  `json:"amount" binding:"required"`
-	CategoryID       *string  `json:"category_id"`
-	ProjectID        *string  `json:"project_id"`
-	PersonID         *string  `json:"person_id"`
-	PaymentMethod    string   `json:"payment_method"`
-	TransactionTime  string   `json:"transaction_time" binding:"required"`
-	Remark           string   `json:"remark"`
-	AttachmentIDs    []string `json:"attachment_ids" binding:"required,min=1"`
+	Amount          float64  `json:"amount" binding:"required"`
+	CategoryID      *string  `json:"category_id"`
+	ProjectID       *string  `json:"project_id"`
+	PersonID        *string  `json:"person_id"`
+	PaymentMethodID *string  `json:"payment_method_id"`
+	TransactionTime string   `json:"transaction_time" binding:"required"`
+	Remark          string   `json:"remark"`
+	AttachmentIDs   []string `json:"attachment_ids" binding:"required,min=1"`
 }
 
 // UpdateTransactionRequest 更新收支记录请求
 type UpdateTransactionRequest struct {
-	Amount           float64  `json:"amount" binding:"required"`
-	CategoryID       *string  `json:"category_id"`
-	ProjectID        *string  `json:"project_id"`
-	PersonID         *string  `json:"person_id"`
-	PaymentMethod    string   `json:"payment_method"`
-	TransactionTime  string   `json:"transaction_time" binding:"required"`
-	Remark           string   `json:"remark"`
-	Status           int      `json:"status" binding:"omitempty,oneof=0 1 2"`
+	Amount          float64  `json:"amount" binding:"required"`
+	CategoryID      *string  `json:"category_id"`
+	ProjectID       *string  `json:"project_id"`
+	PersonID        *string  `json:"person_id"`
+	PaymentMethodID *string  `json:"payment_method_id"`
+	TransactionTime string   `json:"transaction_time" binding:"required"`
+	Remark          string   `json:"remark"`
+	Status          int      `json:"status" binding:"omitempty,oneof=0 1 2"`
 }
 
 // ListTransactionsResponse 收支记录列表响应
@@ -44,24 +44,25 @@ type ListTransactionsResponse struct {
 
 // TransactionInfo 收支记录信息
 type TransactionInfo struct {
-	RecordID        string           `json:"record_id"`
-	Amount          float64          `json:"amount"`
-	CategoryID      *string          `json:"category_id"`
-	ProjectID       *string          `json:"project_id"`
-	ProjectName     string           `json:"project_name,omitempty"` // 扁平化的项目名称，方便列表显示
-	Project         *ProjectSummary  `json:"project,omitempty"`
-	PersonID        *string          `json:"person_id"`
-	PaymentMethod   string           `json:"payment_method"`
-	TransactionTime string           `json:"transaction_time"`
-	Remark          string           `json:"remark"`
-	Status          int              `json:"status"`
-	CreatorID       string           `json:"creator_id"`
-	CreateTime      string           `json:"create_time"`
-	UpdateTime      string           `json:"update_time"`
-	Category        *CategorySummary `json:"category,omitempty"`
-	Person          *UserSummary     `json:"person,omitempty"`
-	Creator         *UserSummary     `json:"creator,omitempty"`
-	Attachments     []AttachmentInfo `json:"attachments,omitempty"`
+	RecordID        string                `json:"record_id"`
+	Amount          float64               `json:"amount"`
+	CategoryID      *string               `json:"category_id"`
+	ProjectID       *string               `json:"project_id"`
+	ProjectName     string                `json:"project_name,omitempty"` // 扁平化的项目名称，方便列表显示
+	Project         *ProjectSummary       `json:"project,omitempty"`
+	PersonID        *string               `json:"person_id"`
+	PaymentMethodID *string               `json:"payment_method_id"`
+	PaymentMethod   *PaymentMethodSummary `json:"payment_method,omitempty"`
+	TransactionTime string                `json:"transaction_time"`
+	Remark          string                `json:"remark"`
+	Status          int                   `json:"status"`
+	CreatorID       string                `json:"creator_id"`
+	CreateTime      string                `json:"create_time"`
+	UpdateTime      string                `json:"update_time"`
+	Category        *CategorySummary      `json:"category,omitempty"`
+	Person          *UserSummary          `json:"person,omitempty"`
+	Creator         *UserSummary          `json:"creator,omitempty"`
+	Attachments     []AttachmentInfo      `json:"attachments,omitempty"`
 }
 
 // ProjectSummary 项目摘要
@@ -75,6 +76,12 @@ type ProjectSummary struct {
 type CategorySummary struct {
 	CategoryID string `json:"category_id"`
 	Name       string `json:"name"`
+}
+
+// PaymentMethodSummary 支付方式摘要
+type PaymentMethodSummary struct {
+	PaymentMethodID string `json:"payment_method_id"`
+	Name            string `json:"name"`
 }
 
 // UserSummary 用户摘要
@@ -127,7 +134,7 @@ func CreateTransaction(c *gin.Context) {
 		CategoryID:      req.CategoryID,
 		ProjectID:       req.ProjectID,
 		PersonID:        req.PersonID,
-		PaymentMethod:   req.PaymentMethod,
+		PaymentMethodID: req.PaymentMethodID,
 		TransactionTime: transactionTime,
 		Remark:          req.Remark,
 		Status:          0, // 默认待审核
@@ -187,6 +194,9 @@ func ListTransactions(c *gin.Context) {
 			return db.Where("is_deleted = ?", 0)
 		}).
 		Preload("Person").
+		Preload("PaymentMethod", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_deleted = ?", 0)
+		}).
 		Preload("Creator").
 		Preload("Attachments")
 
@@ -275,6 +285,7 @@ func ListTransactions(c *gin.Context) {
 			CategoryID:      t.CategoryID,
 			ProjectID:       t.ProjectID,
 			PersonID:        t.PersonID,
+			PaymentMethodID: t.PaymentMethodID,
 			TransactionTime: t.TransactionTime.Format("2006-01-02 15:04:05"),
 			Remark:          t.Remark,
 			Status:          t.Status,
@@ -302,6 +313,12 @@ func ListTransactions(c *gin.Context) {
 				UserID:   t.Person.UserID,
 				Username: t.Person.Username,
 				RealName: t.Person.RealName,
+			}
+		}
+		if t.PaymentMethod != nil {
+			info.PaymentMethod = &PaymentMethodSummary{
+				PaymentMethodID: t.PaymentMethod.PaymentMethodID,
+				Name:            t.PaymentMethod.Name,
 			}
 		}
 		if t.Creator != nil {
@@ -352,6 +369,9 @@ func GetTransaction(c *gin.Context) {
 			return db.Where("is_deleted = ?", 0)
 		}).
 		Preload("Person").
+		Preload("PaymentMethod", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_deleted = ?", 0)
+		}).
 		Preload("Creator").
 		Preload("Attachments").
 		First(&transaction).Error; err != nil {
@@ -376,6 +396,7 @@ func GetTransaction(c *gin.Context) {
 		CategoryID:      transaction.CategoryID,
 		ProjectID:       transaction.ProjectID,
 		PersonID:        transaction.PersonID,
+		PaymentMethodID: transaction.PaymentMethodID,
 		TransactionTime: transaction.TransactionTime.Format("2006-01-02 15:04:05"),
 		Remark:          transaction.Remark,
 		Status:          transaction.Status,
@@ -403,6 +424,12 @@ func GetTransaction(c *gin.Context) {
 			UserID:   transaction.Person.UserID,
 			Username: transaction.Person.Username,
 			RealName: transaction.Person.RealName,
+		}
+	}
+	if transaction.PaymentMethod != nil {
+		info.PaymentMethod = &PaymentMethodSummary{
+			PaymentMethodID: transaction.PaymentMethod.PaymentMethodID,
+			Name:            transaction.PaymentMethod.Name,
 		}
 	}
 	if transaction.Creator != nil {
@@ -456,13 +483,13 @@ func UpdateTransaction(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{
-		"amount":           req.Amount,
-		"category_id":      req.CategoryID,
-		"project_id":       req.ProjectID,
-		"person_id":        req.PersonID,
-		"payment_method":    req.PaymentMethod,
-		"transaction_time": transactionTime,
-		"remark":           req.Remark,
+		"amount":            req.Amount,
+		"category_id":       req.CategoryID,
+		"project_id":        req.ProjectID,
+		"person_id":         req.PersonID,
+		"payment_method_id": req.PaymentMethodID,
+		"transaction_time":  transactionTime,
+		"remark":            req.Remark,
 	}
 
 	if req.Status != 0 {
@@ -530,7 +557,7 @@ func ResubmitTransaction(c *gin.Context) {
 		CategoryID:      req.CategoryID,
 		ProjectID:       req.ProjectID,
 		PersonID:        req.PersonID,
-		PaymentMethod:   req.PaymentMethod,
+		PaymentMethodID: req.PaymentMethodID,
 		TransactionTime: transactionTime,
 		Remark:          req.Remark,
 		Status:          0, // 新记录为待审核状态

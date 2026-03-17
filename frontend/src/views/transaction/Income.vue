@@ -201,7 +201,7 @@ async function handleSubmit() {
           project_id: project_id.value,
           category_id: category_id.value,
           amount: Math.abs(amount.value),
-          payment_method: '',
+          payment_method_id: null,
           transaction_time: transactionTime,
           remark: remark.value
         }

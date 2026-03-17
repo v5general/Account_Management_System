@@ -44,14 +44,20 @@
           <span class="unit">元</span>
         </el-form-item>
 
-        <el-form-item label="支付方式" prop="payment_method">
-          <el-select v-model="payment_method" placeholder="请选择支付方式" clearable filterable allow-create style="width: 100%">
+        <el-form-item label="支付方式" prop="payment_method_id">
+          <el-select v-model="payment_method_id" placeholder="请选择支付方式" clearable filterable style="width: 100%">
             <el-option
               v-for="method in paymentMethods"
-              :key="method"
-              :label="method"
-              :value="method"
+              :key="method.payment_method_id"
+              :label="method.name"
+              :value="method.payment_method_id"
             />
+            <template #footer>
+              <el-button type="primary" link @click="showAddPaymentMethodDialog">
+                <el-icon><Plus /></el-icon>
+                新增支付方式
+              </el-button>
+            </template>
           </el-select>
         </el-form-item>
 
@@ -95,6 +101,26 @@
       </el-form>
     </el-card>
 
+    <!-- 新增支付方式对话框 -->
+    <el-dialog
+      v-model="addPaymentMethodDialogVisible"
+      title="新增支付方式"
+      width="400px"
+    >
+      <el-form :model="paymentMethodForm" :rules="paymentMethodRules" ref="paymentMethodFormRef" label-width="80px">
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="paymentMethodForm.name" placeholder="请输入支付方式名称" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="paymentMethodForm.description" type="textarea" :rows="2" placeholder="请输入描述（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addPaymentMethodDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleAddPaymentMethod" :loading="addPaymentMethodLoading">确定</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 返回按钮 -->
     <div class="back-button-container">
       <el-button @click="$router.back()" circle size="large" class="back-button">
@@ -111,9 +137,10 @@ import { createTransaction, resubmitTransaction } from '@/api/transaction'
 import { getCategoryList } from '@/api/category'
 import { getProjectList } from '@/api/project'
 import { getUserList } from '@/api/user'
+import { getPaymentMethodList, createPaymentMethod } from '@/api/payment_method'
 import type { FormInstance, FormRules, UploadUserFile, UploadProps } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { Back, Upload } from '@element-plus/icons-vue'
+import { Back, Upload, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -123,19 +150,21 @@ const resubmitRecordId = ref<string>('')
 const categories = ref([])
 const projects = ref([])
 const users = ref([])
+const paymentMethods = ref([])
 const fileList = ref<UploadUserFile[]>([])
 const attachmentIds = ref<string[]>([])
 
-// 预定义的支付方式
-const paymentMethods = ref([
-  '现金',
-  '公司转账',
-  '微信',
-  '支付宝',
-  '银行转账',
-  '支票',
-  '其他'
-])
+// 新增支付方式相关
+const addPaymentMethodDialogVisible = ref(false)
+const addPaymentMethodLoading = ref(false)
+const paymentMethodFormRef = ref<FormInstance>()
+const paymentMethodForm = reactive({
+  name: '',
+  description: ''
+})
+const paymentMethodRules: FormRules = {
+  name: [{ required: true, message: '请输入支付方式名称', trigger: 'blur' }]
+}
 
 const uploadAction = '/api/v1/attachments'
 const uploadHeaders = {
@@ -146,7 +175,7 @@ const uploadHeaders = {
 const project_id = ref('')
 const category_id = ref('')
 const person_id = ref('')
-const payment_method = ref('')
+const payment_method_id = ref('')
 const amount = ref(0)
 const transaction_time = ref(new Date())
 const remark = ref('')
@@ -157,7 +186,7 @@ const form = computed(() => ({
   project_id: project_id.value,
   category_id: category_id.value,
   person_id: person_id.value,
-  payment_method: payment_method.value,
+  payment_method_id: payment_method_id.value,
   amount: amount.value,
   transaction_time: transaction_time.value,
   remark: remark.value,
@@ -200,6 +229,54 @@ async function loadUsers() {
   } catch (error) {
     console.error('Failed to load users:', error)
   }
+}
+
+async function loadPaymentMethods() {
+  try {
+    const res = await getPaymentMethodList({ page: 1, page_size: 100 })
+    paymentMethods.value = res.data.list || []
+  } catch (error) {
+    console.error('Failed to load payment methods:', error)
+  }
+}
+
+// 显示新增支付方式对话框
+function showAddPaymentMethodDialog() {
+  paymentMethodForm.name = ''
+  paymentMethodForm.description = ''
+  addPaymentMethodDialogVisible.value = true
+}
+
+// 新增支付方式
+async function handleAddPaymentMethod() {
+  if (!paymentMethodFormRef.value) return
+
+  await paymentMethodFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    addPaymentMethodLoading.value = true
+    try {
+      const res = await createPaymentMethod({
+        name: paymentMethodForm.name,
+        description: paymentMethodForm.description
+      })
+      ElMessage.success('创建成功')
+      addPaymentMethodDialogVisible.value = false
+
+      // 刷新支付方式列表
+      await loadPaymentMethods()
+
+      // 自动选中新创建的支付方式
+      if (res.data?.payment_method_id) {
+        payment_method_id.value = res.data.payment_method_id
+      }
+    } catch (error: any) {
+      console.error('Failed to create payment method:', error)
+      ElMessage.error(error.response?.data?.message || '创建失败')
+    } finally {
+      addPaymentMethodLoading.value = false
+    }
+  })
 }
 
 const beforeUpload: UploadProps['beforeUpload'] = (file) => {
@@ -252,7 +329,7 @@ async function handleSubmit() {
           project_id: project_id.value,
           category_id: category_id.value,
           person_id: person_id.value,
-          payment_method: payment_method.value,
+          payment_method_id: payment_method_id.value || null,
           amount: -Math.abs(amount.value),
           transaction_time: formattedDate,
           remark: remark.value
@@ -287,7 +364,7 @@ function handleReset() {
   project_id.value = ''
   category_id.value = ''
   person_id.value = ''
-  payment_method.value = ''
+  payment_method_id.value = ''
   amount.value = 0
   transaction_time.value = new Date()
   remark.value = ''
@@ -299,6 +376,7 @@ onMounted(() => {
   loadCategories()
   loadProjects()
   loadUsers()
+  loadPaymentMethods()
 
   // 检查是否有重新提交的数据
   const resubmitDataStr = sessionStorage.getItem('resubmitTransaction')
@@ -310,8 +388,8 @@ onMounted(() => {
       project_id.value = resubmitData.project_id || ''
       category_id.value = resubmitData.category_id || ''
       person_id.value = resubmitData.person_id || ''
-      payment_method.value = resubmitData.payment_method || ''
-      amount.value = resubmitData.amount || 0
+      payment_method_id.value = resubmitData.payment_method_id || resubmitData.payment_method?.payment_method_id || ''
+      amount.value = Math.abs(resubmitData.amount) || 0
       if (resubmitData.transaction_time) {
         transaction_time.value = new Date(resubmitData.transaction_time)
       }

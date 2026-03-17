@@ -43,6 +43,8 @@
           </template>
           <!-- 员工和财务显示账号管理 -->
           <el-menu-item index="/settings/account" v-if="!userStore.isAdmin()">账号管理</el-menu-item>
+          <!-- 财务和管理员显示支付方式 -->
+          <el-menu-item index="/settings/payment-method" v-if="userStore.isFinance()">支付方式</el-menu-item>
           <!-- 管理员显示完整菜单 -->
           <template v-if="userStore.isAdmin()">
             <el-menu-item index="/settings/user">用户管理</el-menu-item>
