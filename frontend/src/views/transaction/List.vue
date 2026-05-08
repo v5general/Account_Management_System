@@ -69,7 +69,7 @@
         </el-form-item>
       </el-form>
 
-      <el-table :data="tableData" stripe v-loading="loading">
+      <el-table :data="tableData" stripe v-loading="loading" style="width: 100%">
         <el-table-column label="交易时间" width="120">
           <template #default="{ row }">
             {{ formatDate(row.transaction_time) }}
@@ -98,12 +98,12 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="payment_method" label="支付方式" width="120">
+        <el-table-column label="支付方式" width="120">
           <template #default="{ row }">
-            {{ row.payment_method || '-' }}
+            {{ row.payment_method?.name || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" width="200" show-overflow-tooltip />
+        <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row)">查看</el-button>
@@ -197,6 +197,9 @@
         </el-descriptions-item>
         <el-descriptions-item label="关联人员">
           {{ currentTransaction.person?.real_name || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="支付方式">
+          {{ currentTransaction.payment_method?.name || '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="审核状态">
           <el-tag :type="getStatusType(currentTransaction.status)">
@@ -587,6 +590,8 @@ onMounted(() => {
 <style scoped>
 .transaction-list {
   padding: 20px;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .card-header {

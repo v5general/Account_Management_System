@@ -55,9 +55,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="category.name" label="费用分类" width="120" />
-        <el-table-column prop="payment_method" label="支付方式" width="120">
+        <el-table-column label="支付方式" width="120">
           <template #default="{ row }">
-            {{ row.payment_method || '-' }}
+            {{ row.payment_method?.name || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="项目" width="180">
@@ -141,6 +141,9 @@
         </el-descriptions-item>
         <el-descriptions-item label="关联人员">
           {{ currentRecord.person?.real_name || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="支付方式">
+          {{ currentRecord.payment_method?.name || '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="创建人">
           {{ currentRecord.creator?.real_name || '-' }}
@@ -234,16 +237,19 @@
 import { ref, reactive, onMounted } from 'vue'
 import { getTransactionList, approveTransaction, rejectTransaction } from '@/api/transaction'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import dayjs from 'dayjs'
-import request from '@/utils/request'
 import { formatAmount as formatAmountUtil, formatFileSize as formatFileSizeUtil } from '@/utils/format'
 
 const loading = ref(false)
 const submitLoading = ref(false)
 const tableData = ref<any[]>([])
-const dateRange = ref<[string, string]>([])
+const dateRange = ref<[string, string] | null>(null)
 
-const filters = reactive({
+const filters = reactive<{
+  type: string
+  status: string | number
+  start_time?: string
+  end_time?: string
+}>({
   type: 'all',
   status: '' // 默认显示全部
 })
@@ -393,11 +399,11 @@ async function loadData() {
     if (filters.status !== undefined && filters.status !== null && filters.status !== '') {
       // 不过滤状态，需要在客户端过滤
     }
-    if ((filters as any).start_time) {
-      params.start_time = (filters as any).start_time
+    if (filters.start_time) {
+      params.start_time = filters.start_time
     }
-    if ((filters as any).end_time) {
-      params.end_time = (filters as any).end_time
+    if (filters.end_time) {
+      params.end_time = filters.end_time
     }
 
     const res = await getTransactionList(params)
