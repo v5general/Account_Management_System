@@ -1,187 +1,189 @@
-# 账务管理系统
+# Account Management System
 
 [![Version](https://img.shields.io/badge/version-v1.0.2-blue.svg)](https://github.com)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE)
 
-轻量化、易操作、权限清晰的BS架构账务管理系统，实现收支流水的规范化记录、凭证的统一管理及多维度数据统计分析。
+**English** | [简体中文](./README.zh-CN.md)
 
-## 功能特性
+A lightweight, easy-to-use, BS-architecture accounting management system with clearly defined permissions, enabling standardized recording of revenue and expense transactions, unified voucher management, and multi-dimensional data analysis.
 
-- **用户认证** - JWT令牌认证，密码错误锁定机制
-- **收支管理** - 收入/支出登记、审核、查询
-- **费用分类** - 灵活的费用类别管理
-- **统计报表** - 多维度数据统计与可视化
-- **权限控制** - 管理员/财务/员工三种角色
-- **操作日志** - 完整的操作审计追踪
-- **版本记录** - 系统版本更新信息展示
+## Features
 
-## 技术栈
+- **User Authentication** - JWT token auth, lockout mechanism on repeated password failures
+- **Transaction Management** - Registration, approval, and querying of income/expense records
+- **Expense Categories** - Flexible expense category management
+- **Statistical Reports** - Multi-dimensional data analysis and visualization
+- **Access Control** - Three roles: Admin / Finance / Employee
+- **Operation Logs** - Complete operation audit trail
+- **Version History** - System version update information display
 
-### 后端
+## Tech Stack
+
+### Backend
 - Go 1.18+
-- Gin Web框架
+- Gin web framework
 - GORM (MySQL)
-- JWT 认证
-- bcrypt 密码加密
+- JWT authentication
+- bcrypt password hashing
 
-### 前端
+### Frontend
 - Vue 3.4+
 - TypeScript
 - Element Plus UI
-- ECharts 图表
-- Pinia 状态管理
+- ECharts
+- Pinia state management
 - Vue Router
 
-### 数据库
+### Database
 - MySQL 8.0+
 
-## 项目结构
+## Project Structure
 
 ```
 account-management-system/
-├── backend/                    # 后端代码
-│   ├── main.go                 # 应用入口
-│   ├── go.mod                  # Go 模块定义
-│   ├── config/                 # 配置文件
-│   │   ├── config.go           # 配置结构体
-│   │   └── config.yaml         # YAML 配置文件
-│   ├── cmd/                    # 命令行工具
-│   │   └── recreate_db/        # 数据库重建工具
-│   ├── database/               # 数据库连接
-│   ├── models/                 # 数据模型
-│   │   ├── user.go             # 用户模型
-│   │   ├── transaction.go      # 交易记录模型
-│   │   ├── category.go         # 分类模型
-│   │   ├── project.go          # 项目模型
-│   │   ├── department.go       # 部门模型
-│   │   ├── operation_log.go    # 操作日志模型
-│   │   └── attachment.go       # 附件模型
-│   ├── controllers/            # 控制器
-│   │   ├── auth.go             # 认证控制器
-│   │   ├── user.go             # 用户控制器
-│   │   ├── transaction.go      # 交易控制器
-│   │   ├── category.go         # 分类控制器
-│   │   ├── project.go          # 项目控制器
-│   │   ├── department.go       # 部门控制器
-│   │   ├── statistics.go       # 统计控制器
-│   │   ├── log.go              # 日志控制器
-│   │   └── attachment.go       # 附件控制器
-│   ├── middlewares/            # 中间件
-│   │   ├── auth.go             # JWT 认证中间件
-│   │   ├── cors.go             # 跨域中间件
-│   │   └── logger.go           # 日志中间件
-│   ├── routes/                 # 路由配置
-│   ├── utils/                  # 工具函数
-│   │   ├── common.go           # 通用工具
-│   │   ├── crypto.go           # 加密工具
-│   │   ├── jwt.go              # JWT 工具
-│   │   └── oss.go              # OSS 存储工具
-│   ├── sql/                    # SQL 脚本
+├── backend/                    # Backend code
+│   ├── main.go                 # Application entry
+│   ├── go.mod                  # Go module definition
+│   ├── config/                 # Configuration
+│   │   ├── config.go           # Config struct
+│   │   └── config.yaml         # YAML configuration file
+│   ├── cmd/                    # CLI tools
+│   │   └── recreate_db/        # Database rebuild tool
+│   ├── database/               # Database connection
+│   ├── models/                 # Data models
+│   │   ├── user.go             # User model
+│   │   ├── transaction.go      # Transaction model
+│   │   ├── category.go         # Category model
+│   │   ├── project.go          # Project model
+│   │   ├── department.go       # Department model
+│   │   ├── operation_log.go    # Operation log model
+│   │   └── attachment.go       # Attachment model
+│   ├── controllers/            # Controllers
+│   │   ├── auth.go             # Auth controller
+│   │   ├── user.go             # User controller
+│   │   ├── transaction.go      # Transaction controller
+│   │   ├── category.go         # Category controller
+│   │   ├── project.go          # Project controller
+│   │   ├── department.go       # Department controller
+│   │   ├── statistics.go       # Statistics controller
+│   │   ├── log.go              # Log controller
+│   │   └── attachment.go       # Attachment controller
+│   ├── middlewares/            # Middlewares
+│   │   ├── auth.go             # JWT auth middleware
+│   │   ├── cors.go             # CORS middleware
+│   │   └── logger.go           # Logger middleware
+│   ├── routes/                 # Route configuration
+│   ├── utils/                  # Utility functions
+│   │   ├── common.go           # Common utilities
+│   │   ├── crypto.go           # Crypto utilities
+│   │   ├── jwt.go              # JWT utilities
+│   │   └── oss.go              # OSS storage utilities
+│   ├── sql/                    # SQL scripts
 │   │   ├── 01_create_database.sql
 │   │   ├── 02_create_tables.sql
 │   │   ├── 03_init_data.sql
 │   │   ├── 04_fix_department_unique_index.sql
 │   │   └── 05_add_payment_method.sql
-│   └── uploads/                # 文件上传目录
-├── frontend/                   # 前端代码
+│   └── uploads/                # File upload directory
+├── frontend/                   # Frontend code
 │   ├── src/
-│   │   ├── main.ts             # 程序入口
-│   │   ├── App.vue             # 根组件
-│   │   ├── api/                # API 封装
-│   │   ├── router/             # 路由配置
-│   │   ├── store/              # 状态管理
-│   │   ├── components/         # 公共组件
-│   │   ├── utils/              # 工具函数
-│   │   │   ├── request.ts      # HTTP 请求封装
-│   │   │   └── format.ts       # 格式化工具
-│   │   └── views/              # 页面组件
-│   │       ├── Dashboard.vue   # 首页仪表盘
-│   │       ├── Login.vue       # 登录页
-│   │       ├── transaction/    # 收支管理
-│   │       ├── category/       # 费用分类
-│   │       ├── statistics/     # 统计报表
-│   │       └── settings/       # 系统设置
-│   └── dist/                   # 构建输出
-├── docs/                       # 项目文档
-│   ├── 需求规格说明书.md
-│   ├── 接口文档.md
-│   ├── 使用手册.md
-│   ├── 部署文档.md
-│   └── 重新提交功能说明.md
-└── README.md                   # 项目说明
+│   │   ├── main.ts             # Application entry
+│   │   ├── App.vue             # Root component
+│   │   ├── api/                # API wrappers
+│   │   ├── router/             # Routing configuration
+│   │   ├── store/              # State management
+│   │   ├── components/         # Shared components
+│   │   ├── utils/              # Utilities
+│   │   │   ├── request.ts      # HTTP request wrapper
+│   │   │   └── format.ts       # Formatting utilities
+│   │   └── views/              # Page components
+│   │       ├── Dashboard.vue   # Home dashboard
+│   │       ├── Login.vue       # Login page
+│   │       ├── transaction/    # Transaction management
+│   │       ├── category/       # Expense categories
+│   │       ├── statistics/     # Statistical reports
+│   │       └── settings/       # System settings
+│   └── dist/                   # Build output
+├── docs/                       # Project documentation
+│   ├── Requirements_Specification.md
+│   ├── API_Documentation.md
+│   ├── User_Manual.md
+│   ├── Deployment_Guide.md
+│   └── Resubmission_Feature.md
+└── README.md                   # Project README
 ```
 
-## 功能模块
+## Modules
 
-### 首页仪表盘
-- 总收入、总支出、净收支、记录数统计卡片
-- 最近收支记录列表
-- 按项目统计饼图
+### Dashboard
+- Stat cards for total income, total expense, net balance, and record count
+- Recent transaction list
+- Project-based pie chart
 
-### 收支管理
-- **收入登记** - 财务人员登记收入记录
-- **支出登记** - 财务人员登记支出记录
-- **收支审核** - 管理员审核收支记录
-- **收支列表** - 查看和筛选收支记录
+### Transaction Management
+- **Income Registration** - Finance staff register income records
+- **Expense Registration** - Finance staff register expense records
+- **Transaction Approval** - Administrators approve transactions
+- **Transaction List** - View and filter transactions
 
-### 费用分类
-- 类别增删改查
-- 支持模糊搜索
+### Expense Categories
+- CRUD operations on categories
+- Supports fuzzy search
 
-### 统计报表
-- 多维度统计（项目/人员/类别）
-- 可视化图表展示
+### Statistical Reports
+- Multi-dimensional analysis (project/personnel/category)
+- Visualized charts
 
-### 系统设置
-- **用户管理** - 用户增删改查、权限分配（管理员）
-- **部门管理** - 部门信息管理（管理员）
-- **项目管理** - 项目信息管理（管理员）
-- **操作日志** - 用户操作记录（管理员/财务）
-- **账号管理** - 个人账号信息维护
-- **版本记录** - 系统版本更新信息
+### System Settings
+- **User Management** - User CRUD and permission assignment (Admin)
+- **Department Management** - Department information management (Admin)
+- **Project Management** - Project information management (Admin)
+- **Operation Logs** - User operation records (Admin/Finance)
+- **Account Management** - Personal account maintenance
+- **Version History** - System version update information
 
-## 用户角色
+## User Roles
 
-| 角色 | 权限说明 |
-|------|----------|
-| **管理员 (ADMIN)** | 全部权限，包括用户管理、部门管理、项目管理、收支审核 |
-| **财务人员 (FINANCE)** | 收支登记、费用分类、统计报表、操作日志查看 |
-| **员工 (EMPLOYEE)** | 查看个人收支记录、账号管理 |
+| Role | Permissions |
+|------|-------------|
+| **Admin (ADMIN)** | Full permissions, including user management, department management, project management, and transaction approval |
+| **Finance (FINANCE)** | Transaction registration, expense categories, statistical reports, and operation log viewing |
+| **Employee (EMPLOYEE)** | View personal transaction records, account management |
 
-## 快速开始
+## Quick Start
 
-### 前置要求
+### Prerequisites
 - Go 1.18+
 - Node.js 18+
 - MySQL 8.0+
 
-### 数据库初始化
+### Database Initialization
 ```bash
-# 创建数据库
+# Create database
 mysql -u root -p < backend/sql/01_create_database.sql
-# 创建表结构
+# Create table structure
 mysql -u root -p < backend/sql/02_create_tables.sql
-# 初始化基础数据
+# Initialize base data
 mysql -u root -p < backend/sql/03_init_data.sql
 ```
 
-### 安装依赖
+### Install Dependencies
 
-**后端：**
+**Backend:**
 ```bash
 cd backend
 go mod download
 ```
 
-**前端：**
+**Frontend:**
 ```bash
 cd frontend
 npm install
 ```
 
-### 配置文件
+### Configuration
 
-编辑 `backend/config/config.yaml`：
+Edit `backend/config/config.yaml`:
 ```yaml
 server:
   port: "8080"
@@ -199,68 +201,68 @@ jwt:
   expire: 86400
 ```
 
-### 开发模式
+### Development Mode
 
-**启动后端：**
+**Start backend:**
 ```bash
 cd backend
 go run main.go
 ```
 
-**启动前端：**
+**Start frontend:**
 ```bash
 cd frontend
 npm run dev
 ```
 
-### 生产构建
+### Production Build
 
-**构建后端（Linux x86_64）：**
+**Build backend (Linux x86_64):**
 ```bash
 cd backend
 GOOS=linux GOARCH=amd64 go build -o account-management main.go
 ```
 
-**构建前端：**
+**Build frontend:**
 ```bash
 cd frontend
 npx vite build
 ```
 
-## 默认账号
+## Default Account
 
-| 用户名 | 密码 | 角色 |
-|--------|------|------|
-| admin | admin123 | 管理员 |
+| Username | Password | Role |
+|----------|----------|------|
+| admin | admin123 | Administrator |
 
-## 版本历史
+## Version History
 
 ### v1.0.2 (2026-03-18)
-- 新增支付方式字段，支持多种支付方式选择
-- 支出登记页面支持直接新增支付方式
-- 实现被驳回记录的重新提交功能
-- 优化金额显示，采用千位分隔符格式
-- 统一使用格式化工具函数
-- 优化表格列宽显示效果
-- 优化版本信息界面，开放版本记录查看权限
+- Added payment method field to support multiple payment options
+- Expense registration page allows adding new payment methods directly
+- Implemented resubmission of rejected records
+- Optimized amount display with thousands separators
+- Unified formatting utility functions
+- Improved table column width display
+- Refined version info UI, opened version history viewing permission
 
 ### v1.0.1 (2026-03-01)
-- 优化登录界面设计，采用左右分栏布局
-- 修复首页记录数显示问题
-- 更新部署文档
+- Optimized login page layout with a two-column design
+- Fixed record count display issue on the dashboard
+- Updated deployment documentation
 
 ### v1.0.0 (2026-03-01)
-- 首个正式版本发布
-- 完整的财务管理系统功能
+- Initial stable release
+- Complete accounting management system features
 
-## 文档
+## Documentation
 
-- [需求规格说明书](./docs/需求规格说明书.md)
-- [接口文档](./docs/接口文档.md)
-- [部署文档](./docs/部署文档.md)
-- [使用手册](./docs/使用手册.md)
-- [重新提交功能说明](./docs/重新提交功能说明.md)
+- [Requirements Specification](./docs/Requirements_Specification.md) (Chinese)
+- [API Documentation](./docs/API_Documentation.md) (Chinese)
+- [Deployment Guide](./docs/Deployment_Guide.md) (Chinese)
+- [User Manual](./docs/User_Manual.md) (Chinese)
+- [Resubmission Feature Notes](./docs/Resubmission_Feature.md) (Chinese)
 
-## 许可证
+## License
 
-GPL-3.0
+This project is licensed under the [GPL-3.0 License](./LICENSE).
